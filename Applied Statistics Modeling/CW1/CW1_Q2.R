@@ -1,5 +1,5 @@
 logtime <- c(0.405, 0.916, 1.386, 1.791, 2.484)
 count <- c(31, 26, 19, 15, 20)
 data <- data.frame(count, logtime)
-out <- glm(count ~ logtime, family=poisson, data=data)
+out <- glm(count ~ logtime , family=poisson, data=data)
 summary(out)
