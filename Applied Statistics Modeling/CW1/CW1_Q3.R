@@ -6,7 +6,7 @@ source("/Users/ryan/Documents/GitHub/Statistics/Applied Statistics Modeling/CW1/
 default = data[, 2]
 default = factor(default)
 
-default_num<- as.numeric(default) - 1
+#default_num<- as.numeric(default) - 1
 
 student <- data[, 3]
 student <- factor(data$student, levels = c("No", "Yes"))
@@ -22,7 +22,7 @@ correlation2
 
 #Qc
 out1 = glm(default ~ student + balance + income, family=binomial(link="logit"))
-out1_num = glm(default_num ~ student + balance + income, family=binomial(link="logit"))
+#out1_num = glm(default_num ~ student + balance + income, family=binomial(link="logit"))
 
 summary(out1)
 
