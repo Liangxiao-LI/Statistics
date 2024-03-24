@@ -14,6 +14,8 @@ student <- factor(data$student, levels = c("No", "Yes"))
 balance <- data[, 4]
 income <- data[, 5]
 
+
+
 #Qa
 correlation1 <- cor(default_num, balance)
 correlation2 <- cor(default_num, income)
