@@ -1,0 +1,199 @@
+---
+title: "CW2"
+author: "Liangxiao LI"
+date: "2024-04-10"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Q1: nhtemp
+
+```{r}
+LB_test<-function(resid,max.k,p,q){
+  lb_result<-list()
+  df<-list()
+  p_value<-list()
+  for(i in (p+q+1):max.k){
+    lb_result[[i]]<-Box.test(resid,lag=i,type=c("Ljung-Box"),fitdf=(p+q))
+    df[[i]]<-lb_result[[i]]$parameter
+    p_value[[i]]<-lb_result[[i]]$p.value
+  }
+  df<-as.vector(unlist(df))
+  p_value<-as.vector(unlist(p_value))
+  test_output<-data.frame(df,p_value)
+  names(test_output)<-c("deg_freedom","LB_p_value")
+  return(test_output)
+}
+```
+
+First we load the dataset
+
+```{r}
+load("nhtemp.rda")
+```
+
+## Check Stationarity
+
+Then we produce the time plot, sample ACF against the lag and sample PACF against the lag for the nhtemp data.
+
+```{r}
+ts.plot(nhtemp)
+acf(nhtemp)
+pacf(nhtemp)
+```
+
+Looking at the time plot, the mean of the series appears higher between 1940-1970 to the period between 1910-1940.
+
+Since the sample ACF against the lag doesn't decline rapidly, it's not certain that the series is stationary.
+
+The sample PACF doesn't provide much information for the stationarity.
+
+Therefore we cannot conclude that the series is stationary.
+
+Now we calculate the the first difference of the time series nhtemp as nhtemp_diff in the following section:
+
+```{r}
+nhtemp_diff<-diff(nhtemp)
+```
+
+Now we produce the time plot, sample ACF and sample PACF for the nhtemp_diff
+
+```{r}
+ts.plot(nhtemp_diff)
+acf(nhtemp_diff)
+pacf(nhtemp_diff)
+```
+
+The above three plot show that the first-difference nhtemp_diff is (weakly) stationary
+
+The time plot has a mean equal to zero and shows constant variability over time.
+
+The sample ACF declines rapidly to zero as the lag increases.
+
+The sample PACF also declines rapidly to zero as the lag increases.
+
+In conclusion, we'll explore models fitted to the data nhtemp_diff which has been differenced once.
+
+## Model fitting
+
+#ARIMA(0,1,2)
+
+Since the ACF cut off to zero after lag 2, this suggest that we should begin by fitting an ARIMA(0,1,2) model
+
+```{r}
+ARIMA012<-arima(nhtemp,order=c(0,1,2),method="ML")
+ARIMA012
+```
+
+Now we check the fit of my models using the following three plots:
+
+```{r}
+resid.ARIMA012<-residuals(ARIMA012)
+ts.plot(resid.ARIMA012)
+```
+
+1) A time plot of the model residuals
+
+The time plot of the residuals looks similar to white noise
+
+```{r}
+acf(resid.ARIMA012)
+```
+
+2) A plot of the sample ACF of the model residuals against the lag
+
+For all lags > 0, the sample ACF are all close to zero. This suggests that the residuals are independent.
+
+```{r}
+ARIMA012.LB<-LB_test(resid.ARIMA012,max.k=11,p=0,q=2)
+#To produce a plot of the P-values against the degrees of freedom and
+#add a blue dashed line at 0.05, we run the commands
+plot(ARIMA012.LB$deg_freedom,ARIMA012.LB$LB_p_value,xlab="Degrees of freedom",ylab="P-value",main="Ljung-Box test P-values",ylim=c(0,1))
+abline(h=0.05,col="blue",lty=2)
+```
+
+3) A plot of the first ten P-values for the Ljung-Box test
+
+All p-values are greater than 0.05, which suggests that the ARIMA(0,1,2) is a good fit to the data.
+
+#ARIMA(1,1,2)
+
+```{r}
+ARIMA112<-arima(nhtemp,order=c(1,1,2),method="ML")
+ARIMA112
+ARIMA112<-arima(nhtemp,order=c(2,1,2),method="ML")
+ARIMA112
+```
+
+Since AIC for ARIMA(1,1,2) is 187.12 is less than AIC for ARIMA(0,1,2), and the test statistic for hypotheses: $H_0 : \phi = 0$ vs. $H_1: \phi \ne 0$ is $\frac{-0.9998}{0.0018} > 2$, therefore we reject the null hypothesis and thus ARIMA(1,1,2) is better than ARIMA(0,1,2) model.
+
+We continue to modify the parameter and fit a ARIMA(2,1,2) model, the AIC increased and the test statistics $\frac{0.1536}{0.1689} <2$, therefore we should prefer ARIMA(1,1,2) over ARIMA(2,1,2).
+
+### Q2: JJ_data
+
+First we load the dataset
+
+```{r}
+load("JJ_data.rda")
+```
+
+```{r}
+LB_test_SARIMA<-function(resid,max.k,p,q,P,Q){
+ lb_result<-list()
+ df<-list()
+ p_value<-list()
+  for(i in (p+q+P+Q+1):max.k){
+   lb_result[[i]]<-Box.test(resid,lag=i,type=c("Ljung-Box"),fitdf=(p+q+P+Q))
+   df[[i]]<-lb_result[[i]]$parameter
+   p_value[[i]]<-lb_result[[i]]$p.value
+  }
+ df<-as.vector(unlist(df))
+ p_value<-as.vector(unlist(p_value))
+ test_output<-data.frame(df,p_value)
+ names(test_output)<-c("deg_freedom","LB_p_value")
+ return(test_output)
+ }
+```
+
+Then we produce the time plot, sample ACF against the lag and sample PACF against the lag for the nhtemp data.
+
+```{r}
+ts.plot(JJ_data)
+acf(JJ_data)
+pacf(JJ_data)
+```
+
+From the time plot, the series shows clear seasonality and therefore would need to apply a SARIMA model.
+
+According to the data description, JJ_data is a time series of the quarterly earnings between years, so the seasonal difference lag should be set to 4.
+
+First we take a non-seasonal difference
+
+```{r}
+JJ_non_seasonal_diff <- diff(JJ_data)
+ts.plot(JJ_non_seasonal_diff)
+acf(JJ_non_seasonal_diff)
+pacf(JJ_non_seasonal_diff)
+```
+
+Next we take the difference on the seasonal part setting the difference lag to be 4
+
+```{r}
+JJ_full_diff <- diff(JJ_non_seasonal_diff,lag=4)
+ts.plot(JJ_full_diff)
+acf(JJ_full_diff)
+pacf(JJ_full_diff)
+```
+
+After differencing, out data looks fairly stationary(though the variance increases a bit in 1978-1980). Now we are ready to fit an SARIMA model, the hyper parameters are chosen as follows: (p,d,q)x(P,D,Q)_h where 
+
+```{r}
+model<-arima(JJ_data,order=c(1,1,0),seasonal=list(order=c(1,1,0),period=4),method="ML")
+model
+```
+
+
+
