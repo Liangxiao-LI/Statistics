@@ -90,7 +90,7 @@ pacf(nhtemp_diff, main = "Sample PACF")
 ## Part4: Model fitting - ARIMA(0,1,1)
 
 ```{r,echo=FALSE,include=FALSE,fig.width=3.5, fig.height=3}
-ARIMA<-arima(nhtemp,order=c(0,1,1),method="ML")
+ARIMA<-arima(nhtemp,order=c(0,1,1),method="ML",include.mean=TRUE)
 ARIMA
 ```
 
@@ -156,7 +156,7 @@ From the summary above, we conclude ARIMA(0,1,1) is better than ARIMA(0,1,2) due
 
 &nbsp; 3) Overall we'd prefer a parsimonious model, thus ARIMA(0,1,1) is better than ARIMA(0,1,2) 
 
-## Part7: Conclusion
+## Part7: Conclusion: ARIMA(0,1,1) best
 
 For question 1, the equation for the final fitted model is included below:
 
@@ -512,7 +512,7 @@ pacf(JJ_full_diff)
 ```
 
 ```{r}
-fit <- auto.arima(log(JJ_data))
+fit <- auto.arima(nhtemp)
 summary(fit)
 #fit <- auto.arima(JJ_data_transformed)
 #summary(fit)

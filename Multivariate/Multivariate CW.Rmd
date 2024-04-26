@@ -333,7 +333,7 @@ library(ggpubr) # repels figure labels
 ```
 
 
-```{r,echo=FALSE}
+```{r,echo=FALSE,warning=FALSE}
 UN.transformed <- cbind(log(UN[,3:14]), UN[,15:26], log(UN[,27:38]))
 UN.transformed <- dist(UN.transformed)
 UN.transformed <- cmdscale(UN.transformed)
@@ -349,24 +349,106 @@ ggplot(UN.transformed, aes(x = x, y = y, color = continent)) +
     labs(color = "Continent")  # Labeling the color legend as "Continent"
 ```
 
+It can be seen that data points are clustered based on continents, African countries are mostly located at the left bottom while the European countries are located at the right center.
 
-# Linear discriminant analysis
+This shows that countries from the same continent tends to share similar properties as they clustered together.
 
-```{r splittingdata, echo=FALSE}
-set.seed(123) # so that I get the same results each time.
-#UN.scaled <- UN[,1:38]
-#UN.scaled[,3:38] <- scale(UN[,3:38])
-test.index <- sample(1:141, size=20)
+
+# Linear Discriminant Analysis
+
+Since we are predicting the continent of each country, let's first visualize out sample data.
+
+```{r splittingdata,echo=FALSE,include=FALSE}
+library(caret)
+# If 'continent' is not a factor, convert it to factor
+temp <- UN
+temp$continent <- as.factor(temp$continent)
+
+set.seed(123)  # for reproducibility
+# Creating indices for a stratified sample
+test.index <- createDataPartition(UN$continent, p = 0.1, list = FALSE)
+#set.seed(123) # so that I get the same results each time.
+#test.index <- sample(1:141, size=20)
 UN.test <- UN[test.index,]
 UN.train <- UN[-test.index,]
 ```
 
-```{r,echo=FALSE}
+```{r,echo=FALSE,fig.height=2,fig.width=3}
+# Plotting the data
+ggplot(UN, aes(x = continent)) +  # Specify where the data comes from and which variable to plot
+  geom_bar(fill = "skyblue") +  # This automatically counts the number of each unique value in the continent column
+  labs(title = "Continents in UN", 
+       x = "Continent", 
+       y = "Count") +  # Adding labels
+  theme_minimal()  # Using a minimalistic theme
 
+
+# Plotting the data
+ggplot(UN.train, aes(x = continent)) +  # Specify where the data comes from and which variable to plot
+  geom_bar(fill = "skyblue") +  # This automatically counts the number of each unique value in the continent column
+  labs(title = "Continents for UN.train", 
+       x = "Continent", 
+       y = "Count") +  # Adding labels
+  theme_minimal()  # Using a minimalistic theme
+
+print(paste("The number of occurrences of Oceania in UN is", table(UN$continent)["Oceania"]))
+
+
+print(paste("The number of occurrences of Oceania in UN.train is", table(UN.train$continent)["Oceania"]))
+```
+
+This plot shows that we have only 2 observation of Oceania. Therefore I implement stratified sampling technique from the caret package to ensure that the train-test split is well partitioned and guarantees at least one observation of Oceania is included into the training set
+
+Now we fit the lda predictor and the result is given as follows:
+
+```{r,echo=FALSE}
 UN.lda<-lda(continent ~ gdpPercap_1952+gdpPercap_1957+gdpPercap_1962+gdpPercap_1967+gdpPercap_1972+gdpPercap_1977+gdpPercap_1982+gdpPercap_1987+gdpPercap_1992+gdpPercap_1997+gdpPercap_2002+gdpPercap_2007+lifeExp_1952+lifeExp_1957+lifeExp_1962+lifeExp_1967+lifeExp_1972+lifeExp_1977+lifeExp_1982+lifeExp_1987+lifeExp_1992+lifeExp_1997+lifeExp_2002+lifeExp_2007+pop_1952+pop_1957+pop_1962+pop_1967+pop_1972+pop_1977+pop_1982+pop_1987+pop_1992+pop_1997+pop_2002+pop_2007, UN.train)
 UN.pred <- predict(UN.lda, UN.test)
 print(paste("The predictive accuracy is ", 
 sum(UN.pred$class== UN.test$continent)/dim(UN.test)[1]*100, "%"))
+```
+
+```{r,echo=FALSE}
+table(UN.pred$class, UN.test$continent)
+```
+
+The above table shows that 1 Oceania country has been mis-classified as Europe, 6 Asia countries has been mis-classified as Africa/America and 1 American country is mis-classified as Asia.
+
+64% prediction accuracy is unacceptable for a predictive model. Therefore I decide to perform PCA on the dataset before performing LDA. 
+
+```{r, echo=FALSE,fig.width=3, fig.height=3}
+library(ggplot2)  # Make sure ggplot2 is loaded
+all <- data.frame(gdp, lifeExp, popn)
+
+# Perform Principal Component Analysis on the combined dataset
+all.pca <- prcomp(all, scale = TRUE)
+
+fviz_eig(all.pca, addlabels = TRUE, ylim = c(0, 100)) + ggtitle("Scree plot for LE.PCA")+ theme(plot.title = element_text(hjust = 0.5))
+
+fviz(all.pca, element='var') #Interpretation of leading PC
+```
+
+Based on the scree plot above, I decided to train the LDA predictor based on the first 3 principle components. Using the same train_test split obtained earlier, the PCA based lda predictor shows an increased accuracy of 76%, which is improved compared with the previous non-PCA measure.
+
+```{r,echo=FALSE}
+all.test <- data.frame(all.pca$x[test.index,1:6])
+all.train <- data.frame(all.pca$x[-test.index,1:6])
+
+all.train$continent <- UN$continent[-test.index]
+all.test$continent <- UN$continent[test.index]
+
+```
+
+```{r,echo=FALSE}
+all.lda<-lda(continent ~ PC1+PC2+PC3+PC4+PC5+PC6, all.train)
+all.pred <- predict(all.lda,all.test)
+print(paste("The predictive accuracy is ", 
+sum(all.pred$class== all.test$continent)/dim(all.test)[1]*100, "%"))
+
+```
+
+```{r,echo=FALSE}
+table(all.pred$class, all.test$continent)
 ```
 
 # Clustering
@@ -376,36 +458,97 @@ UN.scaled <- UN[,1:26]
 UN.scaled[,3:26] <- scale(UN[,3:26])
 ```
 
-```{r,echo=FALSE}
+Since we have five different continents, therefore we cut off the tree at depth=5 and check which clustering technique can distinguish the continents the best.
+
+1) Hierarchical clustering with single linkage
+
+```{r,echo=FALSE,fig.width=3, fig.height=3}
 UN.single <- hclust(dist(UN.scaled[,3:26],method="euclidean"),method="single")
-plot(UN.single, labels=UN$continent,cex=0.2)
-result <- cutree(UN.single, k=5)
-table(result, UN$continent)
+#plot(UN.single, labels=UN$continent,cex=0.2)
+Group_num <- cutree(UN.single, k=5)
+table(Group_num, UN$continent)
 ```
 
-```{r,echo=FALSE}
+2) Hierarchical clustering with complete linkage
+
+```{r,echo=FALSE,fig.width=3, fig.height=3}
 UN.complete <- hclust(dist(UN.scaled[,3:26],method="euclidean"),method="complete")
-plot(UN.complete, labels=UN$continent,cex=0.2)
-result <- cutree(UN.complete, k=5)
-table(result, UN$continent)
+#plot(UN.complete, labels=UN$continent,cex=0.2)
+Group_num <- cutree(UN.complete, k=5)
+table(Group_num, UN$continent)
 ```
 
-```{r,echo=FALSE}
+3) Hierarchical clustering with Ward's method
+
+```{r,echo=FALSE,fig.width=3, fig.height=3}
 UN.ward <- hclust(dist(UN.scaled[,3:26],method="euclidean"),method="ward.D2")
-plot(UN.ward, labels=UN$continent,cex=0.2)
-result <- cutree(UN.ward, k=5)
-table(result, UN$continent)
+#plot(UN.ward, labels=UN$continent,cex=0.2)
+Group_num <- cutree(UN.ward, k=5)
+table(Group_num, UN$continent)
 ```
 
-```{r,echo=FALSE}
+4) Hierarchical clustering with average linkage
+
+```{r,echo=FALSE,fig.width=3, fig.height=3}
 UN.average <- hclust(dist(UN.scaled[,3:26],method="euclidean"),method="average")
-plot(UN.average, labels=UN$continent,cex=0.2)
-result <- cutree(UN.average, k=5)
-table(result, UN$continent)
+#plot(UN.average, labels=UN$continent,cex=0.2)
+Group_num <- cutree(UN.average, k=5)
+table(Group_num, UN$continent)
 ```
+
+From the above tables, it can be checked that the Hierarchical clustering with Ward's method is the best, as group_2 is dominanted with Africa countries, while group_5 is dominated by Europe countries.
+
+This means that Africa and Europe contries tend to be closer to each other under the Ward's method.
 
 # Linear regression
 
+1) OLS
+
+```{r}
+x <- UN[,3:14]
+y <- UN[,26]
+data <- cbind(x,y)
+le.lm <- lm(y~., data=data)
+le.lm
+```
+
+2) PCR (principle component regression)
+
+```{r}
+x.pca <- prcomp(x)
+PCscores <- x.pca$x
+le.pcr <- lm(y~PCscores,data = data.frame(cbind(y,PCscores)))
+coef(le.pcr)
+le.pcr.coef <- x.pca$rotation %*% coef(le.pcr)[-1]
+head(le.pcr.coef)
+```
+
+```{r,echo=FALSE}
+library(pls)
+le.pcr_pls <- pcr(y~., data=data, validation = 'CV')
+summary(le.pcr_pls)
+
+plot(RMSEP(le.pcr_pls), legendpos = "topright")
+```
+
+From the above figure, it looks like 1 component is sufficient. Using more than 1 component doesn't lead to big decreases in the cross-validation error and even lead to larger prediction errors.
+
+3) Ridge regression
+
+```{r,echo=FALSE}
+library(glmnet)
+le.ridge <- glmnet(x,y,alpha = 0)
+plot(le.ridge,xvar='lambda')
+lambdas <- 10^seq(3,-2,by=-0.1)
+cv_fit <- cv.glmnet(gasoline$NIR, gasoline$octane, alpha = 0, lambda = lambdas)
+plot(cv_fit)
+cv_fit$lambda.min
+cv_fit$lambda.1se
+```
+
+```{r}
+coef(glmnet(x, y, alpha=0, lambda=cv_fit$lambda.1se))
+```
 
 
 # Appendix
