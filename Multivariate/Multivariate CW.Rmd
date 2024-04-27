@@ -460,7 +460,50 @@ UN.scaled[,3:26] <- scale(UN[,3:26])
 
 Since we have five different continents, therefore we cut off the tree at depth=5 and check which clustering technique can distinguish the continents the best.
 
+1) K-means clustering
+```{r,echo=FALSE}
+library(factoextra)
+fviz_nbclust(UN.scaled[,3:26], kmeans, method = "wss")
+```
+
+Based on the elbow method, it seems to have three natural clusters in the data, because the Wss decrease rapidly from 2 to 3, and later parts only yields minor improvements.
+
+```{r,echo=FALSE}
+set.seed(123)
+UN.k <- kmeans(UN.scaled[,3:26], centers = 3, nstart=25)
+```
+
+```{r,echo=FALSE}
+table(UN.k$cluster, UN$continent)
+```
+
+```{r,echo=FALSE}
+set.seed(123)
+UN.k <- kmeans(UN.scaled[,3:26], centers = 5, nstart=25)
+```
+
+```{r,echo=FALSE}
+table(UN.k$cluster, UN$continent)
+```
+
+2) Model-based clustering : Gaussian clusters
+
+Since how to choose K for model-based clustering is beyond the scope of this module, I randomly choose G = 5 ^_^ (Because we got five different continents and hopefully it can cluster the sets into different continents)
+
+```{r,echo=FALSE,include=FALSE}
+library(mclust)
+UN.m <- Mclust(UN.scaled[,3:26],G=5)
+#plot(UN.m, what = c("classification"))
+```
+
+```{r}
+table(UN.m$classification, UN$continent)
+```
+
+Once again it successfully clustered out a group which is Africa.
+
 1) Hierarchical clustering with single linkage
+
 
 ```{r,echo=FALSE,fig.width=3, fig.height=3}
 UN.single <- hclust(dist(UN.scaled[,3:26],method="euclidean"),method="single")
@@ -494,6 +537,14 @@ UN.average <- hclust(dist(UN.scaled[,3:26],method="euclidean"),method="average")
 #plot(UN.average, labels=UN$continent,cex=0.2)
 Group_num <- cutree(UN.average, k=5)
 table(Group_num, UN$continent)
+```
+
+```{r, fig.width=9, fig.height=7, fig.align="center",warning=FALSE, echo=FALSE}
+par(mfrow=c(2,2))
+plot(UN.single, labels = UN$continent, cex=0.5)
+plot(UN.average, labels = UN$continent, cex=0.5)
+plot(UN.complete, labels = UN$continent, cex=0.5)
+plot(UN.ward, labels = UN$continent, cex=0.5)
 ```
 
 From the above tables, it can be checked that the Hierarchical clustering with Ward's method is the best, as group_2 is dominanted with Africa countries, while group_5 is dominated by Europe countries.
@@ -544,6 +595,10 @@ cv_fit <- cv.glmnet(gasoline$NIR, gasoline$octane, alpha = 0, lambda = lambdas)
 plot(cv_fit)
 cv_fit$lambda.min
 cv_fit$lambda.1se
+```
+
+```{r}
+coef(glmnet(x, y, alpha=0, lambda=cv_fit$lambda.min))
 ```
 
 ```{r}
