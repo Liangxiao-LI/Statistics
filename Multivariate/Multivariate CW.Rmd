@@ -9,7 +9,7 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Part1: Exploratory Data Analysis
+# Part 1: Exploratory Data Analysis
 
 First we load the data
 
@@ -57,7 +57,7 @@ From the above line plots, it can be concluded that the average GDP, life expect
 
 In the following section we plot the box plots for each dataframe, since the population value exceed the R integer boundary, we'll plot 'years x log(population)' for the population box plot 
 
-# Part2: Principal component analysis
+# Part 2: Principal component analysis
 
 Here for all three different datasets, I perform PCA horizontally, treating each country as a data point and each year as a feature.
 
@@ -79,7 +79,7 @@ popn.pca <- prcomp(popn, scale=TRUE)
 #gdp.pca$center  # the sample mean
 ```
 
-## Part2.1: Number of PCs to retain 
+## Part 2.1: Number of PCs to retain 
 
 First we plot the scree plot and the corresponding biplots to decide how many PCs we should retain.
 
@@ -94,8 +94,8 @@ library(ggrepel)
 plot <- fviz_eig(gdp.pca, addlabels = TRUE, ylim = c(0, 100)) + ggtitle("Scree plot for GDP.PCA")+ theme(plot.title = element_text(hjust = 0.5))
 print(plot)
 
-plot <- fviz(gdp.pca, element = "var") + ggtitle("Biplot for GDP.PCA")+ theme(plot.title = element_text(hjust = 0.5))
-print(plot)
+#plot <- fviz(gdp.pca, element = "var") + ggtitle("Biplot for GDP.PCA")+ theme(plot.title = element_text(hjust = 0.5))
+#print(plot)
 
 ```
 
@@ -106,7 +106,7 @@ From the scree plot, we'd retain PC1 and PC2 as they explained 91.8% and 5.3% of
 
 fviz_eig(le.pca, addlabels = TRUE, ylim = c(0, 100)) + ggtitle("Scree plot for LE.PCA")+ theme(plot.title = element_text(hjust = 0.5))
 
-fviz(le.pca, element='var') #Interpretation of leading PC
+#fviz(le.pca, element='var') #Interpretation of leading PC
 
 ```
 
@@ -117,12 +117,12 @@ From the scree plot, we'd retain PC1 and PC2 for life expectancy as they explain
 
 fviz_eig(popn.pca, addlabels = TRUE, ylim = c(0, 100)) + ggtitle("Scree plot for Popn.PCA")+ theme(plot.title = element_text(hjust = 0.5))
 
-fviz(popn.pca, element='var') #Interpretation of leading PC
+#fviz(popn.pca, element='var') #Interpretation of leading PC
 ```
 
 From the scree plot, we'd retain PC1 for population as it explained 99.6% of the variance within the data. 
 
-## Part2.2: Scatter plots for PCs and interpretations
+## Part 2.2: Scatter plots for PCs and interpretations
 
 ```{r gdp biplot,echo=FALSE,warning=FALSE,fig.width=10, fig.height=3}
 #fviz(gdp.pca, element='var')#Interpretation of leading PC
@@ -225,7 +225,7 @@ Therefore **African** tend to have both the lowest overall GDP/life expectancy. 
 For individual countries, **United States**, **Switzerland** and **Norway** have both high GDP_PC1 and LE_PC1, indicating best economic situation and citizen health condition. **Sierra Leone** and **Afgharistan** have low GDP_PC1 and LE_PC1, indicating worst economic situation and citizen health condition. 
 
 
-# Canonical correlation analysis
+# Part 3: Canonical correlation analysis
 
 ```{r, include=FALSE}
 library(CCA)
@@ -263,7 +263,7 @@ ggplot(scores_df, aes(x = xscores, y = yscores, color = continent)) +
 
 Above is the scatter plot of the first pair of CC variables. From this plot we can conclude that there are strong correlation between the first pair of CC variables $\eta_1$(First X score) and $\phi_1$(First Y score). 
 
-## Interpretation
+## Part 3.1: Interpretation
 
 To help interpret the first pair of canonical variables, I ploted the their loadings(x/y coefficients) in the following graphs.
 
@@ -302,7 +302,7 @@ We see that for log(gdp), the higher the value in the red dots mean higher value
 We see that Europe countries generally has lower $\eta_1$, meaning that it yields high gdp value overall since the x coefficient has a mean of -0.06(less than 0). Europe countries also have lower $\phi_1$, meaning that it yields higher life expectancy since the y coefficient has a mean of -0.008(less than 0). The African countries yields the opposite conclusion.
 
 
-## Why log(gdp)?
+## Part 3.2: Why log(gdp)?
 
 To explain why we apply log(gdp) instead of gpd here, we need to look back at the exploratory analysis.
 
@@ -325,7 +325,7 @@ The above boxplots and lineplots show that log(gdp) removes the extreme values a
 head(cca$scores$xscores[,1]) # the canonical correlation variables 
 ```
 
-# Multidimensional scaling
+# Part 4: Multidimensional scaling
 
 ```{r,include=FALSE}
 library(dplyr)
@@ -354,7 +354,7 @@ It can be seen that data points are clustered based on continents, African count
 This shows that countries from the same continent tends to share similar properties as they clustered together.
 
 
-# Linear Discriminant Analysis
+# Part 5: Linear Discriminant Analysis
 
 Since we are predicting the continent of each country, let's first visualize out sample data.
 
@@ -451,7 +451,7 @@ sum(all.pred$class== all.test$continent)/dim(all.test)[1]*100, "%"))
 table(all.pred$class, all.test$continent)
 ```
 
-# Clustering
+# Part 6:Clustering
 
 ```{r scaling, echo=FALSE}
 UN.scaled <- UN[,1:26]
@@ -551,21 +551,154 @@ From the above tables, it can be checked that the Hierarchical clustering with W
 
 This means that Africa and Europe contries tend to be closer to each other under the Ward's method.
 
-# Linear regression
+# Part 7: Linear regression
 
-1) OLS
+Before fitting any models, I first split the data into training dataset and testing dataset using stratified sampling technique, one of the training set is GDP and another training set is log(GDP). In later part I'll fit the OLS, PCR and Ridge regression on raw GDP and log(GDP), then compare their testing accuracy on the testing dataset to determine which model is the best.
 
-```{r}
-x <- UN[,3:14]
-y <- UN[,26]
-data <- cbind(x,y)
-le.lm <- lm(y~., data=data)
-le.lm
+## Part 7.1: OLS(Ordinary Least square)
+
+```{r,echo=FALSE,include=FALSE}
+
+set.seed(123)  # for reproducibility
+# Creating indices for a stratified sample
+test.index <- createDataPartition(UN$continent, p = 0.1, list = FALSE)
+#set.seed(123) # so that I get the same results each time.
+#test.index <- sample(1:141, size=20)
+UN.test <- UN[test.index,]
+UN.train <- UN[-test.index,]
+
+x <- UN.train[,3:14]
+logx <- log(UN.train[,3:14])
+y <- UN.train[,26]
+
+x.test <- UN.test[,3:14]
+logx.test <- log(UN.test[,3:14])
+y.test <- UN.test[,26]
+
+data_train <- cbind(x,y)
+data_train_log <- cbind(logx,y)
+data_test <- cbind(x.test,y.test)
+data_test_log <- cbind(logx.test,y.test)
+
+library(Metrics)
+library(pls)
 ```
 
-2) PCR (principle component regression)
+```{r,echo=FALSE}
+ols <- lm(y~., data=data_train)
+ols.log <- lm(y~., data=data_train_log)
 
-```{r}
+# Make predictions
+predictions_ols <- predict(ols, newdata = data_test)
+predictions_ols_log <- predict(ols.log, newdata = data_test_log)
+
+# MSE calculation for original data model
+mse_ols <- sqrt(mse(y.test, predictions_ols))
+
+# MSE calculation for log-transformed data model
+mse_ols_log <- sqrt(mse(y.test, predictions_ols_log))
+
+print(paste("The RMSEP for ols prediction on test set is", round(mse_ols, 2)))
+print(paste("The RMSEP for ols_log prediction on test set is", round(mse_ols_log, 2)))
+```
+
+First I fit the OLS regression model on both gdp and log(gdp) model. The RMSEP(root of mean square error for prediction) are listed above.
+
+## Part 7.2: PCR (principle component regression)
+
+```{r,echo=FALSE,fig.width=3, fig.height=3}
+
+pcr <- pcr(y~., data=data_train, validation = 'CV')
+#summary(pcr)
+plot(RMSEP(pcr), legendpos = "topright")
+
+pcr_log <- pcr(y~., data=data_train_log, validation = 'CV')
+plot(RMSEP(pcr_log), legendpos = "topright")
+
+```
+
+From the above figure, it looks like for GDP 1 component is sufficient, as using more than 1 component doesn't lead to big decreases in the cross-validation error and even lead to larger prediction errors. But for log(GDP) 2 components are needed, since the lowest RMSEP is achieved at components = 2.
+
+```{r,echo=FALSE}
+
+# Making predictions with a specified number of components
+predictions_pcr <- predict(pcr, newdata = data_test, ncomp = 1)
+predictions_pcr_log <- predict(pcr_log, newdata = data_test_log, ncomp = 2)
+
+
+# MSE calculation for original data model
+Rmse_pcr <- sqrt(mse(y.test, predictions_pcr))
+Rmse_pcr_log <- sqrt(mse(y.test, predictions_pcr_log))
+
+print(paste("The RMSEP for pcr prediction on test set is", round(Rmse_pcr, 2)))
+print(paste("The RMSEP for pcr prediction on test set is", round(Rmse_pcr_log, 2)))
+
+```
+
+Here I fit the PCR regression model on both gdp and log(gdp) model. The RMSEP(root of mean square error for prediction) are listed above.
+
+## Part 7.3: Ridge regression
+
+```{r,echo=FALSE,include=FALSE}
+library(glmnet)
+```
+
+```{r,echo=FALSE,fig.width=3, fig.height=3}
+ridge <- glmnet(x,y,alpha = 0)
+plot(ridge,xvar='lambda')
+```
+
+```{r,echo=FALSE,fig.width=3, fig.height=3}
+lambdas <- 10^seq(3,-2,by=-0.05)
+cv_fit <- cv.glmnet(as.matrix(x), as.matrix(y), alpha = 0, lambda = lambdas)
+plot(cv_fit)
+
+cv_fit_log <- cv.glmnet(as.matrix(logx), as.matrix(y), alpha = 0, lambda = lambdas)
+plot(cv_fit_log)
+#cv_fit$lambda.min
+#cv_fit$lambda.1se
+```
+
+Here I choose the lambda which minimise the mean-square error in the cross validation.
+
+```{r,echo=FALSE}
+ridge <- glmnet(x, y, alpha=0, lambda=cv_fit$lambda.min)
+ridge_log <- glmnet(logx, y, alpha=0, lambda=cv_fit_log$lambda.min)
+
+predictions_ridge <- predict(ridge, newx = as.matrix(data_test[,1:12]))
+predictions_ridge_log <- predict(ridge_log, newx = as.matrix(data_test_log[,1:12]))
+
+# MSE calculation for original data model
+Rmse_ridge <- sqrt(mse(y.test, predictions_ridge))
+Rmse_ridge_log <- sqrt(mse(y.test, predictions_ridge_log))
+
+print(paste("The RMSEP for ridge on test set is", round(Rmse_ridge, 2)))
+print(paste("The RMSEP for ridge_log on test set is", round(Rmse_ridge_log, 2)))
+
+```
+
+Here I fit the Ridge regression model on both gdp and log(gdp) model. The RMSEP(root of mean square error for prediction) are listed above.
+
+## Part 7.4: Conclusion
+
+```{r,echo=FALSE}
+# Create a data frame to compare RMSEP values
+
+comparison_table <- data.frame(
+  Model = c("OLS", "PCR", "Ridge"),
+  RMSEP_Not_Logged = c(mse_ols, Rmse_pcr, Rmse_ridge),
+  RMSEP_Logged = c(mse_ols_log, Rmse_pcr_log, Rmse_ridge_log)
+)
+
+# Print the comparison table
+print(comparison_table)
+```
+
+Therefore, by comparing the RMSEP calculated on the test dataset, it's obvious that using log(gdp) as predictors produces better prediction result, and the OLS regression produce the lowest RMSEP, which is the best model in this case.
+
+# Trash content
+
+```{r,echo=FALSE,include=FALSE}
 x.pca <- prcomp(x)
 PCscores <- x.pca$x
 le.pcr <- lm(y~PCscores,data = data.frame(cbind(y,PCscores)))
@@ -573,38 +706,6 @@ coef(le.pcr)
 le.pcr.coef <- x.pca$rotation %*% coef(le.pcr)[-1]
 head(le.pcr.coef)
 ```
-
-```{r,echo=FALSE}
-library(pls)
-le.pcr_pls <- pcr(y~., data=data, validation = 'CV')
-summary(le.pcr_pls)
-
-plot(RMSEP(le.pcr_pls), legendpos = "topright")
-```
-
-From the above figure, it looks like 1 component is sufficient. Using more than 1 component doesn't lead to big decreases in the cross-validation error and even lead to larger prediction errors.
-
-3) Ridge regression
-
-```{r,echo=FALSE}
-library(glmnet)
-le.ridge <- glmnet(x,y,alpha = 0)
-plot(le.ridge,xvar='lambda')
-lambdas <- 10^seq(3,-2,by=-0.1)
-cv_fit <- cv.glmnet(gasoline$NIR, gasoline$octane, alpha = 0, lambda = lambdas)
-plot(cv_fit)
-cv_fit$lambda.min
-cv_fit$lambda.1se
-```
-
-```{r}
-coef(glmnet(x, y, alpha=0, lambda=cv_fit$lambda.min))
-```
-
-```{r}
-coef(glmnet(x, y, alpha=0, lambda=cv_fit$lambda.1se))
-```
-
 
 # Appendix
 

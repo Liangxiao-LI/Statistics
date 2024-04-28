@@ -35,7 +35,7 @@ LB_test<-function(resid,max.k,p,q){
 load("nhtemp.rda")
 ```
 
-## Part1: Check Stationarity and Seasonality
+## Part1: Check Stationarity
 
 First we produce the time plot and ACF plot from the given data: 
 
@@ -91,7 +91,7 @@ pacf(nhtemp_diff, main = "Sample PACF")
 ## Part4: Model fitting - ARIMA(0,1,1)
 
 ```{r,echo=FALSE,include=FALSE,fig.width=3.5, fig.height=3}
-ARIMA<-arima(nhtemp,order=c(0,1,1),method="ML",include.mean=TRUE)
+ARIMA<-arima(nhtemp,order=c(0,1,1),method="ML")
 ARIMA
 ```
 
@@ -99,7 +99,7 @@ ARIMA
 resid.ARIMA<-residuals(ARIMA)
 ts.plot(resid.ARIMA, main = "Sample Time Plot")
 acf(resid.ARIMA, main = "Sample ACF")
-ARIMA.LB<-LB_test(resid.ARIMA,max.k=11,p=0,q=2)
+ARIMA.LB<-LB_test(resid.ARIMA,max.k=11,p=0,q=1)
 #To produce a plot of the P-values against the degrees of freedom and
 #add a blue dashed line at 0.05, we run the commands
 plot(ARIMA.LB$deg_freedom,ARIMA.LB$LB_p_value,xlab="Degrees of freedom",ylab="P-value",main="Ljung-Box test P-values",ylim=c(0,1))
@@ -186,7 +186,7 @@ LB_test_SARIMA<-function(resid,max.k,p,q,P,Q){
  }
 ```
 
-## Part1: Check Stationarity and Seasonality
+## Part1: Check Stationarity
 
 First we produce the time plot and ACF plot from the given data: 
 
@@ -239,13 +239,52 @@ Now $JJ_3$ appear to be stationary without seasonality.
 
 However, the Time plot for JJ_3 shows a trend of non-constant variance, as the final part of the time series has greater variance compared with earlier part. Therefore we applied transformation to tackle with this problem.
 
-## Part4: Apply Box-Cox transformation on JJ_1
+## Part4: Apply Transformation on JJ_1 to tackle non-constant variance
 
-I've applied both log and sqrt transformation on $JJ_3$ but the final model doesn't perform well compared with fitting a SARIMA(1,1,1)x(0,1,0)[4] on non-transformed data. 
+To identify 
 
-By Googling I found box-cox transformation is a nice way to solve the problem of non-constant variance, and I implemented it on $JJ_1$ 
+```{r,echo=FALSE,include=FALSE}
+# Assuming JJ_data is your time series data vector
 
-$$\color{red}{JJ_{tran1} = boxcox(JJ_1)}$$
+# Define the window size
+n <- 15
+
+# Initialize vectors to store the running mean and variance
+running_mean <- vector("numeric", length(JJ_data)-n+1)
+running_variance <- vector("numeric", length(JJ_data)-n+1)
+
+# Calculate running mean and variance using a for loop
+for (i in 1:((length(JJ_data))-n+1)) {
+  # Determine the start and end of the current window
+  window_start <- i
+  window_end <- i+n-1
+  print(i)
+  # Slice the window from the data
+  window <- JJ_data[window_start:window_end]
+  running_mean[i] <- mean(window)
+  running_variance[i] <- var(window)
+}
+
+```
+
+```{r, fig.height=3,include=FALSE}
+plot(running_mean, running_variance, 
+     main="Scatter Plot of Running Mean vs Running Variance", 
+     xlab="Running Mean", 
+     ylab="Running Variance", 
+     pch=19, col="blue") # 'pch=19' specifies the point type, 'col' specifies the color
+
+plot(running_mean^2, running_variance, 
+     main="Scatter Plot of Running Mean^2 vs Running Variance", 
+     xlab="Running Mean", 
+     ylab="Running Variance", 
+     pch=19, col="blue") # 'pch=19' specifies the point type, 'col' specifies the color
+
+```
+
+Here I used a window width of n=15 for calculations here. We see that the right hand plot of $s_k^2$ against $\hat{\mu}_k^2$ appears to be more linear than that of $s_k^2$ against $\hat{\mu}_k$, so we might consider a log transformation for this set of data to account for non-constant variance.
+
+$$\color{red}{JJ_{tran1} = log(JJ_1)}$$
 
 ```{r,echo=FALSE}
 # Estimate the optimal lambda for the Box-Cox transformation
@@ -262,7 +301,7 @@ acf(JJ_data_transformed, main = "sample ACF of JJ_{tran1}")
 
 ## Part5: Remove non-stationarity and seasonality from JJ_tran1
 
-Then we carry on the same process to remove the non-stationarity and seasonality. We first difference $JJ_{tran1}$ with a seasonal difference lag $h=4$ and gain $JJ_{tran2} = \nabla_4 (JJ_{tran1}) = (1-B^4) (JJ_{tran1})$ , then we take the first difference on $JJ_{tran2}$ and obtain $JJ_{tran3} = \nabla^1 JJ_{tran2} = (1-B) JJ_{tran2}$. Below is the time plot for $JJ_{tran2}$ and $JJ_{tran3}$
+Then we carry on the same process to remove the non-stationarity and seasonality. We first difference $JJ_{tran1}$ with a seasonal difference lag $h=4$ and gain $\color{red}{JJ_{tran2}} = \nabla_4 (JJ_{tran1}) = (1-B^4) (JJ_{tran1})$ , then we take the first difference on $JJ_{tran2}$ and obtain $\color{red}{JJ_{tran3}} = \nabla^1 JJ_{tran2} = (1-B) JJ_{tran2}$. Below is the time plot for $JJ_{tran2}$ and $JJ_{tran3}$
 
 ```{r,echo=FALSE,fig.width=3.5, fig.height=3}
 JJ_seasonal_diff <- diff(JJ_data_transformed,lag=4)
@@ -273,7 +312,7 @@ ts.plot(JJ_full_diff,main = "Time plot of JJ_{tran3}")
 
 From the time plot, it seems both non-stationarity and seasonality has been removed from $JJ_{tran1}$.
 
-## Part6: SARIMA Parameter analysis for $JJ_{3}$ and $JJ_{tran3}$
+## Part6: SARIMA Parameter analysis for $\color{red}{JJ_{3}}$ and $\color{red}{JJ_{tran3}}$
 
 Now we start our fitting attempt with SARIMA(p,1,q)x(P,1,Q)[4].
 
@@ -391,7 +430,7 @@ ARIMA2
 
 From the summary above, we conclude that SARIMA(0,1,1)x(0,1,0)[4] is better than SARIMA(1,1,1)x(0,1,0)[4] due to following reasons:
 
-&nbsp; 1) AIC for SARIMA(0,1,1)x(0,1,0)[4] is -138.54 is less than AIC for SARIMA(1,1,1)x(0,1,0)[4], which is -136.7. 
+&nbsp; 1) AIC for SARIMA(0,1,1)x(0,1,0)[4] is -138.54, this is less than AIC for SARIMA(1,1,1)x(0,1,0)[4], which is -136.7. 
 
 &nbsp; 2) Overall we'd prefer a parsimonious model, thus SARIMA(0,1,1)x(0,1,0)[4] is better than SARIMA(1,1,1)x(0,1,0)[4]
 
