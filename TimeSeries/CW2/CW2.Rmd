@@ -50,7 +50,7 @@ acf(nhtemp, main="Sample ACF")
 #pacf(nhtemp, main="Sample PACF")
 ```
 
-From plots above, we conclude the series is non-stationary and non-seasonal due to following reasons:
+From plots above, we conclude the series is non-stationary due to following reasons:
 
 &nbsp; 1) Time plot: the mean of the series appears higher between 1940-1970 to the period between 1910-1940.
 
@@ -67,9 +67,9 @@ acf(nhtemp_diff, main="Sample ACF")
 #pacf(nhtemp_diff)
 ```
 
-Therefore we conclude the series is (weakly) stationary without seasonality due to following reasons:
+Therefore we conclude the series is (weakly) stationary due to following reasons:
 
-&nbsp; 1) Time plot: has a mean equal to zero and shows constant variability over time.
+&nbsp; 1) Time plot: has a mean equal to zero and shows constant variability over time. There seems to be no obvious trend or seasonal patterns as well.
 
 &nbsp; 2) Sample ACF plot: declines rapidly to zero as the lag increases, cut off after lag 1
 
@@ -196,13 +196,13 @@ acf(JJ_data,main = "Sample ACF JJ")
 #pacf(JJ_data)
 ```
 
-From the plots above, we conclude that the series is non-stationary and seasonal due to following reasons:
+From the plots above, we conclude that the series is non-stationary due to following reasons:
 
-&nbsp; 1) Time plot: both the mean and variance of the series appears to increase overtime, which indicate non-stationarity.
+&nbsp; 1) Time plot: both mean and variance appears to increase overtime, which indicate non-stationarity.
 
 &nbsp; 2) Sample ACF plot: doesn't decay rapidly, therefore it's not stationary.
 
-&nbsp; 3) Time plot: the data shows seasonality, as the earnings are higher in Qtr 2,3 and lower in Qtr 1,4
+&nbsp; 3) Seasonality: the data is seasonal as earnings are higher in Qtr 2,3 and lower in Qtr 1,4
 
 Therefore would need to apply a SARIMA model for JJ_data.
 
@@ -210,19 +210,23 @@ Therefore would need to apply a SARIMA model for JJ_data.
 
 According to the data description, JJ is a time series of the quarterly earnings between years, so the seasonal difference lag should be set to $h=4$. There fore if $\color{red}{JJ_1}$ denotes our original time series, we define the lag 4 difference time series $JJ_2$ as $\color{red}{JJ_2 = \nabla_4 JJ_1 = (1-B^4) JJ_1}$ 
 
-```{r,echo=FALSE,fig.width=3.5, fig.height=3}
+```{r,echo=FALSE,fig.width=3.5, fig.height=2.5}
 JJ_seasonal_diff <- diff(JJ_data,lag=4)
 ts.plot(JJ_seasonal_diff,main ="Time plot for JJ_2")
+acf(JJ_seasonal_diff,main = "Sample ACF JJ_2")
 ```
 
 From the time plot, it seems that the seasonality has been removed in $JJ_2$.
 
-```{r,echo=FALSE,fig.width=3.5, fig.height=3}
-acf(JJ_seasonal_diff,main = "Sample ACF JJ_2")
-pacf(JJ_seasonal_diff, main = "Sample PACF JJ_2")
+```{r,echo=FALSE,fig.width=3.5, fig.height=3,include=FALSE}
+#pacf(JJ_seasonal_diff, main = "Sample PACF JJ_2")
 ```
 
-However, according to the sample ACF and sample PACF for the seasonally differnecd data, it suggest non-stationarity, because the ACF decays slowly. 
+However, $JJ_2$ is non-stationary due to following reasons: 
+
+1) The time plot doesn't have constant mean.
+
+2) sample ACF decays slowly.
 
 ## Part3: Apply First difference on JJ_2
 
@@ -235,13 +239,11 @@ acf(JJ_full_diff, main = "Sample ACF JJ_3")
 #pacf(JJ_full_diff, main = "Sample PACF JJ_3")
 ```
 
-Now $JJ_3$ appear to be stationary without seasonality.
+Now $JJ_3$ appear to be stationary.
 
 However, the Time plot for JJ_3 shows a trend of non-constant variance, as the final part of the time series has greater variance compared with earlier part. Therefore we applied transformation to tackle with this problem.
 
-## Part4: Apply Transformation on JJ_1 to tackle non-constant variance
-
-To identify 
+## Part4: Apply log Transformation on JJ_1 to tackle non-constant variance
 
 ```{r,echo=FALSE,include=FALSE}
 # Assuming JJ_data is your time series data vector
@@ -267,87 +269,57 @@ for (i in 1:((length(JJ_data))-n+1)) {
 
 ```
 
-```{r, fig.height=3,include=FALSE}
+```{r, fig.width=3.5,fig.height=3,echo=FALSE}
 plot(running_mean, running_variance, 
-     main="Scatter Plot of Running Mean vs Running Variance", 
+     main="Mean vs Variance", 
      xlab="Running Mean", 
      ylab="Running Variance", 
      pch=19, col="blue") # 'pch=19' specifies the point type, 'col' specifies the color
 
 plot(running_mean^2, running_variance, 
-     main="Scatter Plot of Running Mean^2 vs Running Variance", 
+     main="Mean^2 vs Variance", 
      xlab="Running Mean", 
      ylab="Running Variance", 
      pch=19, col="blue") # 'pch=19' specifies the point type, 'col' specifies the color
 
 ```
 
-Here I used a window width of n=15 for calculations here. We see that the right hand plot of $s_k^2$ against $\hat{\mu}_k^2$ appears to be more linear than that of $s_k^2$ against $\hat{\mu}_k$, so we might consider a log transformation for this set of data to account for non-constant variance.
+To identify which transformation to be used, here I applied a window width of n=15 for running mean and running variance. We see that the right hand plot of $s_k^2$ against $\hat{\mu}_k^2$ appears to be more linear than that of $s_k^2$ against $\hat{\mu}_k$, so we might consider a log transformation for this set of data to account for non-constant variance.
 
 $$\color{red}{JJ_{tran1} = log(JJ_1)}$$
 
-```{r,echo=FALSE}
-# Estimate the optimal lambda for the Box-Cox transformation
-lambda <- BoxCox.lambda(JJ_data)
-```
-
-```{r,echo=FALSE,fig.width=3.5, fig.height=3,include=FALSE}
-# Apply the Box-Cox transformation
-JJ_data_transformed <- BoxCox(JJ_data, lambda)
+```{r,echo=FALSE,fig.width=3.5, fig.height=3}
+# Apply the log transformation
+JJ_data_transformed <- log(JJ_data)
 ts.plot(JJ_data_transformed, main ="Time plot of JJ_{tran1}")
 acf(JJ_data_transformed, main = "sample ACF of JJ_{tran1}")
-#pacf(JJ_data)
 ```
 
 ## Part5: Remove non-stationarity and seasonality from JJ_tran1
 
-Then we carry on the same process to remove the non-stationarity and seasonality. We first difference $JJ_{tran1}$ with a seasonal difference lag $h=4$ and gain $\color{red}{JJ_{tran2}} = \nabla_4 (JJ_{tran1}) = (1-B^4) (JJ_{tran1})$ , then we take the first difference on $JJ_{tran2}$ and obtain $\color{red}{JJ_{tran3}} = \nabla^1 JJ_{tran2} = (1-B) JJ_{tran2}$. Below is the time plot for $JJ_{tran2}$ and $JJ_{tran3}$
+Then we carry on the same process to remove the non-stationarity. We first difference $JJ_{tran1}$ with a seasonal difference lag $h=4$ and gain $\color{red}{JJ_{tran2}} = \nabla_4 (JJ_{tran1}) = (1-B^4) (JJ_{tran1})$ 
 
 ```{r,echo=FALSE,fig.width=3.5, fig.height=3}
 JJ_seasonal_diff <- diff(JJ_data_transformed,lag=4)
 ts.plot(JJ_seasonal_diff,main ="Time plot of JJ_{tran2}")
-JJ_full_diff <- diff(JJ_seasonal_diff)
-ts.plot(JJ_full_diff,main = "Time plot of JJ_{tran3}")
+acf(JJ_seasonal_diff,main = "Sample ACF JJ_{tran2}")
+#JJ_full_diff <- diff(JJ_seasonal_diff)
+#ts.plot(JJ_full_diff,main = "Time plot of JJ_{tran3}")
 ```
 
-From the time plot, it seems both non-stationarity and seasonality has been removed from $JJ_{tran1}$.
+From the time plot of $JJ_{tran2}$, it seems that the non-stationarity has been removed from the $JJ_{tran1}$, and the ACF cut off after lag 0, which means $JJ_{tran2}$ is stationary
 
-## Part6: SARIMA Parameter analysis for $\color{red}{JJ_{3}}$ and $\color{red}{JJ_{tran3}}$
-
-Now we start our fitting attempt with SARIMA(p,1,q)x(P,1,Q)[4].
-
-### Part 6.1: Non-transformed data $\color{red}{JJ_{3}}$
-
+## Part6: SARIMA Parameter analysis for $\color{red}{JJ_{tran2}}$
 
 ```{r,echo=FALSE,fig.width=3.5, fig.height=3}
-JJ_data_ts <- ts(JJ_full_diff, start=c(1970, 1))
-acf(JJ_data_ts, main = "Sample ACF JJ_3")
-pacf(JJ_data_ts, main = "Sample PACF JJ_3")
+JJ_seasonal_diff <- diff(log(JJ_data),differences = 1,lag=4)
+#JJ_full_diff <- diff(JJ_seasonal_diff)
+JJ_data_ts <- ts(JJ_seasonal_diff, start=c(1970, 1))
+acf(JJ_data_ts, main = "Sample ACF JJ_{tran2}")
+pacf(JJ_data_ts, main = "Sample PACF JJ_{tran2}")
 ```
 
-The best model should be **SARIMA(1,1,1) x (0,1,0)[4]** due to following reasons:
-
-Seasonal components: (P,Q)
-
-&nbsp; 1) P: Check PACF at lag = 4,8,12 ... PACF cut off already at lag = 4, therefore we choose P = 0.
-
-&nbsp; 2) Q: Check ACF at lag = 4,8,12 ... ACF cut off already at lag = 4, therefore we choose Q = 0
-
-Non Seasonal components : (p,q)
-
-&nbsp; 3) p: PACF cut off after lag = 1, therefore we choose p = 1
-
-&nbsp; 4) q: ACF cut off after lag = 1, therefore we choose q = 1.
-
-### Part 6.2: Transformed data $\color{red}{JJ_{tran3}}$
-
-```{r,echo=FALSE,fig.width=3.5, fig.height=3}
-JJ_data_ts <- ts(JJ_full_diff, start=c(1970, 1))
-acf(JJ_data_ts, main = "Sample ACF JJ_{tran3}")
-pacf(JJ_data_ts, main = "Sample PACF JJ_{tran3}")
-```
-
-The best model should be **SARIMA(0,1,1) x (0,1,0)[4]** due to following reasons:
+The model to begin should be **SARIMA(0,0,0) x (0,1,0)[4]** due to following reasons:
 
 Seasonal components: (P,Q)
 
@@ -359,94 +331,92 @@ Non Seasonal components : (p,q)
 
 &nbsp; 3) p: PACF cut off after lag = 0, therefore we choose p = 0
 
-&nbsp; 4) q: ACF cut off after lag = 1, therefore we choose q = 1.
+&nbsp; 4) q: ACF cut off after lag = 1, therefore we choose q = 0.
 
-## Part7: Model Diagonostic $JJ_1$ vs. $JJ_{tran1}$
-
-To make expression concise, I'll use '$\color{red}{M1}$' to refer the SARIMA(1,1,1)x(0,1,0)[4] model for $JJ_1$ and '$\color{red}{M2}$' to refer the SARIMA(0,1,1)x(0,1,0)[4] model for $JJ_{tran1}$ 
+## Part7: Model Diagonostic : SARIMA(0,0,0)x(0,1,0)[4]
 
 ```{r,include=FALSE,echo=FALSE}
-fit <- auto.arima(JJ_data_transformed)
-summary(fit)
+#fit <- auto.arima(JJ_data_transformed)
+#summary(fit)
 ```
 
 ```{r,echo=FALSE,fig.width=3.5, fig.height=2.5}
-ARIMA<-arima(JJ_data,order=c(1,1,1),seasonal=list(order=c(0,1,0),period=4),method="ML")
-ARIMA2<-arima(JJ_data_transformed,order=c(0,1,1),seasonal=list(order=c(0,1,0),period=4),method="ML")
+ARIMA2<-arima(JJ_data_transformed,order=c(0,0,0),seasonal=list(order=c(0,1,0),period=4),method="ML",include.mean = FALSE)
 
-resid.ARIMA<-residuals(ARIMA)
 resid.ARIMA2<-residuals(ARIMA2)
 
-ts.plot(resid.ARIMA, main = "Residual Time Plot - M1")
-ts.plot(resid.ARIMA2, main = "Residual Time Plot - M2")
+ts.plot(resid.ARIMA2, main = "Residual Time Plot")
 
+acf(resid.ARIMA2, main = "Sample ACF")
 
-acf(resid.ARIMA, main = "Sample ACF- M1")
-acf(resid.ARIMA2, main = "Sample ACF - M2")
-
-
-ARIMA.LB<-LB_test_SARIMA(resid.ARIMA,max.k=12,p=1,q=1,P=0,Q=0)
+ARIMA.LB2<-LB_test_SARIMA(resid.ARIMA2,max.k=12,p=0,q=0,P=0,Q=0)
 #To produce a plot of the P-values against the degrees of freedom and
 #add a blue dashed line at 0.05, we run the commands
-plot(ARIMA.LB$deg_freedom,ARIMA.LB$LB_p_value,xlab="Degrees of freedom",ylab="P-value",main="LB test - M1",ylim=c(0,1))
+plot(ARIMA.LB2$deg_freedom,ARIMA.LB2$LB_p_value,xlab="Degrees of freedom",ylab="P-value",main="LB test - M2",ylim=c(0,1))
 abline(h=0.05,col="blue",lty=2)
 
+```
 
+From plots above, we conclude SARIMA(0,0,0)x(0,1,0)[4] is **a bad fit** due to following reasons:
+
+1) Time plot of the model residuals:
+
+The time plot of the residuals doesn't look like white noise, with non-zero mean
+
+2) A plot of the sample ACF of the model residuals
+
+For all lags > 0, the sample ACF are all close to zero except at lag = 1. This suggests that the residuals are almost independent(uncorrelated).
+
+3) Ljung-Box test: The first p-value is significant
+
+To fix the non-zero mean problem in the residual time plot, here we apply the first difference on $JJ_{tran2}$ and obtain $JJ_{tran3} = (1-B)JJ_{tran2}$ (Another reason why we apply first difference is that the time plot for $JJ_{tran2}$ doesn't have constant mean)
+
+Therefore we'll further investigate SARIMA(p,1,q)x(0,1,0)[4] in the following section
+
+## Part8: Model Comparison: SARIMA(p,1,q)x(0,1,0)[4] 
+
+In this section, we compare three models, SARIMA(0,1,0)x(0,1,0)[4], SARIMA(1,1,0)x(0,1,0)[4] and SARIMA(0,1,1)x(0,1,0)[4]
+
+```{r,echo=FALSE}
+ARIMA2<-arima(JJ_data_transformed,order=c(0,1,0),seasonal=list(order=c(0,1,0),period=4),method="ML")
+ARIMA2
+
+ARIMA2<-arima(JJ_data_transformed,order=c(0,1,1),seasonal=list(order=c(0,1,0),period=4),method="ML")
+
+ARIMA2
+
+ARIMA2<-arima(JJ_data_transformed,order=c(1,1,0),seasonal=list(order=c(0,1,0),period=4),method="ML")
+ARIMA2
+
+```
+
+From the summary above, we conclude that SARIMA(0,1,1)x(0,1,0)[4] is the best model for it has the smallest AIC. And the test statistic $|\frac{-0.8345}{0.1437}|>2$, which means we need to reject the null hypothesis that $\theta_1 =0$.
+
+We also draw the model diagnostic plots for the SARIMA(0,1,1)x(0,1,0)[4] model:
+
+```{r,fig.width=3.5, fig.height=2.5,echo=FALSE}
+ARIMA2<-arima(JJ_data_transformed,order=c(0,1,1),seasonal=list(order=c(0,1,0),period=4),method="ML")
+
+resid.ARIMA2<-residuals(ARIMA2)
+
+ts.plot(resid.ARIMA2, main = "Residual Time Plot")
+
+acf(resid.ARIMA2, main = "Sample ACF")
 
 ARIMA.LB2<-LB_test_SARIMA(resid.ARIMA2,max.k=12,p=0,q=1,P=0,Q=0)
 #To produce a plot of the P-values against the degrees of freedom and
 #add a blue dashed line at 0.05, we run the commands
 plot(ARIMA.LB2$deg_freedom,ARIMA.LB2$LB_p_value,xlab="Degrees of freedom",ylab="P-value",main="LB test - M2",ylim=c(0,1))
 abline(h=0.05,col="blue",lty=2)
-
-
-
-
 ```
 
-From the plots above, we conclude that both M1 and M2 are good fits, while **M2 is slightly better** due to following reasons:
-
-1) Time plot of the model residuals:
-
-The time plot of the residuals for M2 looks to be white noise, with mean zero and constant variance. (However for M1 the **variance isn't constant**)
-
-2) A plot of the sample ACF of the model residuals
-
-For all lags > 0, the sample ACF are all close to zero except at lag = 1. This suggests that the residuals are almost independent(uncorrelated).
-
-3) A plot of the first ten P-values for the Ljung-Box test
-
-All p-values for M2 are greater than 0.05(non-significant), however for M1 the first p-value is significant)
-
-## Part8: SARIMA(0,1,1)x(0,1,0)[4] vs. SARIMA(1,1,1)x(0,1,0)[4] for M2
-
-However, it's still worth checking if adding AR(p) component would be a better fit. Therefore we fit the model again with SARIMA(1,1,1)x(0,1,0)[4] for $JJ_{tran1}$
-
-```{r,echo=FALSE}
-ARIMA2
-ARIMA2<-arima(JJ_data_transformed,order=c(1,1,1),seasonal=list(order=c(0,1,0),period=4),method="ML")
-ARIMA2
-```
-
-From the summary above, we conclude that SARIMA(0,1,1)x(0,1,0)[4] is better than SARIMA(1,1,1)x(0,1,0)[4] due to following reasons:
-
-&nbsp; 1) AIC for SARIMA(0,1,1)x(0,1,0)[4] is -138.54, this is less than AIC for SARIMA(1,1,1)x(0,1,0)[4], which is -136.7. 
-
-&nbsp; 2) Overall we'd prefer a parsimonious model, thus SARIMA(0,1,1)x(0,1,0)[4] is better than SARIMA(1,1,1)x(0,1,0)[4]
+The above diagnostic plots shows that the model SARIMA(0,1,1)x(0,1,0)[4] is a good fit. Therefore we conclude that the best model for the log transformed JJ_data is SARIMA(0,1,1)x(0,1,0)[4]
 
 ## Part9: Conclusion
 
-Let $X_t$ denote the original JJ_data
+For the **log transformed** data, the best model is SARIMA(0,1,1)x(0,1,0)[4], and the equation is:
 
-For the **non-transformed** data, the best model is SARIMA(1,1,1)x(0,1,0)[4], and the equation is:
-
-$$(1+0.3465B)(1-B)(1-B^4) X_t = (1 - 0.6308B)Z_t$$
-
-For the **boxcox transformed** data, the best model is SARIMA(0,1,1)x(0,1,0)[4], and the equation is:
-
-$$(1-B)(1-B^4) boxcox(X_t) = (1 - 0.7325B)Z_t$$
-
-here $boxcox(\cdot)$ denotes the transformation performed on the original JJ_data.
+$$(1-B)(1-B^4) log(X_t) = (1 - 0.8345B)Z_t$$
 
 # Appendix
 

@@ -156,7 +156,7 @@ Above is the scatter plot of PC scores and the loadings for GDP PC1/2:
 
 Therefore **European** countries have generally higher GDP while **African** countries have generally lower GDP.
 
-&nbsp; b) PC2 Might represent a cyclic variation which such as economic fluctuations. As higher PC2 indicate higher GDP between 1952-1982, while lower PC2 indicate higher GDP between 1987-2007.
+&nbsp; b) PC2 Might represent a cyclic variation which such as economic fluctuations. As higher PC2 indicate higher GDP between 1952-1982, while lower PC2 indicate lower GDP between 1987-2007.
 
 Therefore **Asia** countries tend to have higher GDP after 1987, especially Singapore.
 
