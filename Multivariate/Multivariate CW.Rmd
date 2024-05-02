@@ -33,41 +33,89 @@ library(ggplot2)
 library(reshape2)
 ```
 
-Since we have 141 rows of different countries, therefore visulizing individual line plots for each country would result in a cluttered figure. For such a large number of states, I'll focus on aggregate plots by calculating the average GDP, life expectancy, population accross the United State.
+Since we have 141 rows of different countries, therefore visulizing individual line plots for each country would result in a cluttered figure. For such a large number of states, I'll focus on aggregate plots by calculating the average GDP, life expectancy, population.
+
+```{r, echo=FALSE,fig.height=3}
+
+data <- UN
+
+europe_gdp <- data[data$continent == "Europe", 3:14]
+Asia_gdp <- data[data$continent == "Asia", 3:14]
+Oceania_gdp <- data[data$continent == "Oceania", 3:14]
+Americas_gdp <- data[data$continent == "Americas", 3:14]
+Africa_gdp <- data[data$continent == "Africa", 3:14]
+
+europe_le <- data[data$continent == "Europe", 15:26]
+Asia_le <- data[data$continent == "Asia", 15:26]
+Oceania_le <- data[data$continent == "Oceania", 15:26]
+Americas_le <- data[data$continent == "Americas", 15:26]
+Africa_le <- data[data$continent == "Africa", 15:26]
+
+europe_pop <- data[data$continent == "Europe", 27:38]
+Asia_pop <- data[data$continent == "Asia", 27:38]
+Oceania_pop <- data[data$continent == "Oceania", 27:38]
+Americas_pop <- data[data$continent == "Americas", 27:38]
+Africa_pop <- data[data$continent == "Africa", 27:38]
+
+```
+
 
 ```{r exploratory 1, echo=FALSE, fig.width=3.5, fig.height=3}
-average_gdp <- apply(gdp, 2, mean)
-plot(years, average_gdp, type = "l", xlab = "Year", ylab = "Ave. GDP", main = "Ave. GDP by Year")
+
+plot(years, apply(europe_gdp, 2, mean), type = "l", col="blue",xlab = "Year", ylab = "Ave. GDP", main = "Ave. GDP by Year",ylim = c(0, 30000))
+lines(years,apply(Asia_gdp, 2, mean),col="red")
+lines(years,apply(Oceania_gdp, 2, mean),col="green")
+lines(years,apply(Americas_gdp, 2, mean),col="purple")
+lines(years,apply(Africa_gdp, 2, mean),col="orange")
+legend("topleft", legend = c("Europe", "Asia","Oceania","Americas","Africa"), col = c("blue", "red", "green", "purple", "orange"), lty = 1,cex = 0.4)
 
 boxplot(gdp, names = years, main = "GDP by Year", xlab = "Year", ylab = "GDP")
 
-average_le <- apply(lifeExp, 2, mean)
-plot(years, average_le, type = "l", xlab = "Year", ylab = "Ave. Life Expectancy", main = "Ave. Life Expectancy by Year")
+plot(years, apply(europe_le, 2, mean), type = "l", col="blue",xlab = "Year", ylab = "Ave. Life expectancy", main = "Ave. Life expectancy by Year",ylim = c(35, 80))
+lines(years,apply(Asia_le, 2, mean),col="red")
+lines(years,apply(Oceania_le, 2, mean),col="green")
+lines(years,apply(Americas_le, 2, mean),col="purple")
+lines(years,apply(Africa_le, 2, mean),col="orange")
+legend("bottomright", legend = c("Europe", "Asia","Oceania","Americas","Africa"), col = c("blue", "red", "green", "purple", "orange"), lty = 1,cex = 0.3)
 
 boxplot(lifeExp, names = years, main = "Life Expectancy by Year", xlab = "Year", ylab = "Life Expectancy")
 
-
-average_popn <- apply(popn, 2, mean)
-plot(years, average_popn, type = "l", xlab = "Year", ylab = "Ave. Population", main = "Ave. Population by Year")
-
+plot(years, apply(europe_pop, 2, mean), type = "l", col="blue",xlab = "Year", ylab = "Ave. Population", main = "Ave. Population by Year",ylim = c(0, 1.2e+08))
+lines(years,apply(Asia_pop, 2, mean),col="red")
+lines(years,apply(Oceania_pop, 2, mean),col="green")
+lines(years,apply(Americas_pop, 2, mean),col="purple")
+lines(years,apply(Africa_pop, 2, mean),col="orange")
+legend("topleft", legend = c("Europe", "Asia","Oceania","Americas","Africa"), col = c("blue", "red", "green", "purple", "orange"), lty = 1,cex = 0.5)
 boxplot(log(popn), names = years, main = "log(Population) by Year", xlab = "Year", ylab = "log(Population)")
 ```
 
+1) Line plots
+
 From the above line plots, it can be concluded that the average GDP, life expectancy and population are growing steadily across the globe as years goes by.
 
-In the following section we plot the box plots for each dataframe, since the population value exceed the R integer boundary, we'll plot 'years x log(population)' for the population box plot 
+For both GDP and Life expectancy, the ranking of continents from highest to lowest is as follows: Oceania > Europe > Americas > Asia > Africa
+
+For population, Asia shows tremendously higher population than other continents, followed by Americas, Europe, Africa and Oceania.
+
+2) Box plots
+
+Here I plot the box plots for gdp,life expectancy and population(without catagorizing by continents).
+
+The box plot again shows the average GDP, life expectancy and population are growing steadily across the globe as years goes by. 
+
+The GDP plot shows that there exist lots of outliers among the data due to skewness, therefore we may consider using log(gdp) in later calculation.
 
 # Part 2: Principal component analysis
 
 Here for all three different datasets, I perform PCA horizontally, treating each country as a data point and each year as a feature.
 
-Since the columns are 12 different years, this means the features are measuring similar entities, therefore we should perform PCA based on *S(sample covariance matrix)* for gdp, life expectancy and population.
+Here I perform PCA on three different datasets: gdp, life expectancy and population, where each dataset contains the value in different years. Since each dataset shares same type of data from different years, I decide to perform PCA based on **S(sample covariance matrix)**.
 
 ```{r pca, echo=FALSE}
 library(ggplot2)  # Make sure ggplot2 is loaded
-gdp.pca <- prcomp(gdp, scale=TRUE)
-le.pca <- prcomp(lifeExp, scale=TRUE)
-popn.pca <- prcomp(popn, scale=TRUE)
+gdp.pca <- prcomp(gdp, scale=FALSE)
+le.pca <- prcomp(lifeExp, scale=FALSE)
+popn.pca <- prcomp(popn, scale=FALSE)
 #summary(gdp.pca)
 ```
 
@@ -81,7 +129,7 @@ popn.pca <- prcomp(popn, scale=TRUE)
 
 ## Part 2.1: Number of PCs to retain 
 
-First we plot the scree plot and the corresponding biplots to decide how many PCs we should retain.
+First we plot the scree plot and the corresponding circle plots to decide how many PCs we should retain.
 
 ```{r,echo=FALSE,include=FALSE}
 library(factoextra) 
@@ -94,40 +142,48 @@ library(ggrepel)
 plot <- fviz_eig(gdp.pca, addlabels = TRUE, ylim = c(0, 100)) + ggtitle("Scree plot for GDP.PCA")+ theme(plot.title = element_text(hjust = 0.5))
 print(plot)
 
-#plot <- fviz(gdp.pca, element = "var") + ggtitle("Biplot for GDP.PCA")+ theme(plot.title = element_text(hjust = 0.5))
-#print(plot)
+plot <- fviz(gdp.pca, element = "var") + ggtitle("Biplot for GDP.PCA")+ theme(plot.title = element_text(hjust = 0.5))
+print(plot)
 
 ```
 
-From the scree plot, we'd retain PC1 and PC2 as they explained 91.8% and 5.3% of the variance within the data. 
+From the scree plot, we'd retain PC1 and PC2 as they explained 94% and 4.5% of the variance within the data. Which covers most of the variability of the data.
+
+From the covariance plot, we notice that all GDP variables are positively correlated with PC1, column 1952 - 1987 are positively correlated with PC2 and column 1992 - 2007 are negatively correlated with PC2
 
 ```{r le scree plot,fig.width=3, fig.height=3,echo=FALSE}
 #fviz_eig(le.pca, addlabels = TRUE, ylim = c(0, 100)) #Scree plot
 
 fviz_eig(le.pca, addlabels = TRUE, ylim = c(0, 100)) + ggtitle("Scree plot for LE.PCA")+ theme(plot.title = element_text(hjust = 0.5))
 
-#fviz(le.pca, element='var') #Interpretation of leading PC
+fviz(le.pca, element='var') #Interpretation of leading PC
 
 ```
 
-From the scree plot, we'd retain PC1 and PC2 for life expectancy as they explained 92.3% and 5.6% of the variance within the data. 
+From the scree plot, we'd retain PC1 and PC2 for life expectancy as they explained 92% and 6% of the variance within the data. 
+
+From the covariance plot, we notice that all variabels are positively correlated with PC1, column 1952 - 1982 are positively correlated with PC2 and column 1987 - 2007 are negatively correlated with PC2
 
 ```{r popn scree plot,fig.width=3, fig.height=3,echo=FALSE}
 #fviz_eig(le.pca, addlabels = TRUE, ylim = c(0, 100)) #Scree plot
 
 fviz_eig(popn.pca, addlabels = TRUE, ylim = c(0, 100)) + ggtitle("Scree plot for Popn.PCA")+ theme(plot.title = element_text(hjust = 0.5))
 
-#fviz(popn.pca, element='var') #Interpretation of leading PC
+fviz(popn.pca, element='var') #Interpretation of leading PC
 ```
 
-From the scree plot, we'd retain PC1 for population as it explained 99.6% of the variance within the data. 
+From the scree plot, we'd retain PC1 for population as it explained 99.7% of the variance within the data. 
+
+From the covariance plot, we notice that all variabels are positively correlated with PC1, column 1952 - 1987 are negatively correlated with PC2 and column 1992 - 2007 are positively correlated with PC2
 
 ## Part 2.2: Scatter plots for PCs and interpretations
 
-```{r gdp biplot,echo=FALSE,warning=FALSE,fig.width=10, fig.height=3}
+```{r gdp biplot,echo=FALSE}
 #fviz(gdp.pca, element='var')#Interpretation of leading PC
 pca_data <- data.frame(PC1 = gdp.pca$x[,1], PC2 = gdp.pca$x[,2], Continent = UN$continent)
+```
 
+```{r,echo=FALSE,warning=FALSE,fig.width=10, fig.height=6}
 ggplot(pca_data, aes(x = PC1, y = PC2, color = Continent)) +
   geom_point() + # This adds the scatter plot points
   geom_text_repel(aes(label = UN[,2]), size = 3)+
@@ -152,18 +208,23 @@ t(pc_loadings)
 
 Above is the scatter plot of PC scores and the loadings for GDP PC1/2:
 
-&nbsp; a) PC1 seems to measure a general trend for GDP, which can be seen from the loadings above (All loadings are approximately +0.28 ~ +0.3). Higher PC1 indicate higher overall GDP.
+&nbsp; a) **PC1** seems to measure a general trend for GDP, which can be seen from the loadings above (All loadings are positive). Higher PC1 indicate higher overall GDP.
 
-Therefore **European** countries have generally higher GDP while **African** countries have generally lower GDP.
+**Continents interpretation**: **European** countries have generally higher GDP while **African** countries have generally lower GDP.
 
-&nbsp; b) PC2 Might represent a cyclic variation which such as economic fluctuations. As higher PC2 indicate higher GDP between 1952-1982, while lower PC2 indicate lower GDP between 1987-2007.
+**Countries interpretation**: Switzerland/United States has generally the highest GDP due to high PC1, meaning they have generally highest GDP around the globe.
 
-Therefore **Asia** countries tend to have higher GDP after 1987, especially Singapore.
+&nbsp; b) **PC2** Might represent a cyclic variation such as economic fluctuations. As higher PC2 indicate higher GDP between 1952-1987, while lower PC2 indicate higher GDP between 1992-2007.
 
-```{r le biplot,echo=FALSE, fig.align='center',warning=FALSE,fig.width=10, fig.height=3}
+**Continents interpretation**: **Asia** countries tend to have higher GDP after 1992 due to its low PC2. 
 
+**Countries interpretation**: Singapore's extremely low PC2 means it started its economic growth after 1992 and thrives in 2002-2007.
+
+```{r le biplot,echo=FALSE}
 pca_data <- data.frame(PC1 = le.pca$x[,1], PC2 = le.pca$x[,2], Continent = UN$continent)
+```
 
+```{r,echo=FALSE,fig.align='center',warning=FALSE,fig.width=10, fig.height=6}
 ggplot(pca_data, aes(x = PC1, y = PC2, color = Continent)) +
   geom_point() + # This adds the scatter plot points
   geom_text_repel(aes(label = UN[,2]), size = 3)+
@@ -171,7 +232,6 @@ ggplot(pca_data, aes(x = PC1, y = PC2, color = Continent)) +
        x = "PC1", y = "PC2") +
   theme_minimal()+ # Use a minimal theme for the plot
   scale_color_brewer(palette = "Set1")
-
 ```
 
 ```{r,echo=FALSE}
@@ -185,18 +245,23 @@ t(pc_loadings)
 
 Above is the scatter plot of PC scores and the loadings for life expectancy PC1/2:
 
-&nbsp; a) PC1 seems to measure a general trend for life expectancy, which can be seen from the loadings above (All loadings are approximately +0.28 ~ +0.3). Higher PC1 indicate higher overall life expectancy.
+&nbsp; a) **PC1** seems to measure a general trend for life expectancy, which can be seen from the loadings above (All loadings are approximately +0.28 ~ +0.3). Higher PC1 indicate higher overall life expectancy.
 
-Therefore **European** countries have the highest overall life expectancy while **African** countries have the lowest overall life expectancy.
+**Continents interpretation**: **European** countries have the highest overall life expectancy while **African** countries have the lowest overall life expectancy.
 
-&nbsp; b) PC2 Might represent a cyclic variation which such as . As higher PC2 indicate higher life expectancy between 1952-1982, while lower PC2 indicate higher life expectancy after 1987.
+**Countries interpretation**: **Sierra Leone** has the lowest PC1, indicating an overall lowest life expectancy.
 
-Therefore **Asian** countries tend to have higher life expectancy after 1987, especially Oman. This means that Asian countries started developing quickly after 1987.
+&nbsp; b) **PC2** Might represent a cyclic variation. As higher PC2 indicate higher life expectancy between 1952-1982, while lower PC2 indicate higher life expectancy after 1987. (PC2 loadings are negative after 1982 and positive before 1982)
 
-```{r le bip,echo=FALSE, fig.align='center',fig.width=10, fig.height=3,warning=FALSE}
+**Continents interpretation**: Therefore **Asian** countries tend to have higher life expectancy after 1987. This means that Asian countries generally started developing quickly after 1987.
 
+**Countries interpretation**: **Oman** has the lowest PC2, indicating higher life expectancy after 1987.
+
+```{r le bip,echo=TRUE}
 pca_data <- data.frame(PC1 = gdp.pca$x[,1], PC2 = le.pca$x[,1], Continent = UN$continent)
+```
 
+```{r,echo=FALSE,fig.align='center',fig.width=10, fig.height=6,warning=FALSE}
 ggplot(pca_data, aes(x = PC1, y = PC2, color = Continent)) +
   geom_point() + # This adds the scatter plot points
   geom_text_repel(aes(label = UN[,2]), size = 3)+
@@ -216,14 +281,15 @@ rownames(pc_loadings) <- rownames(popn.pca$rotation)
 t(pc_loadings)
 ```
 
-Above is the scatter plot of PC scores and the loadings for the first PC score for life expectancy against first PC score for GDP:
+Above is the scatter plot of first PC score for life expectancy against first PC score for GDP. (The loadings for them are attached as well)
 
 As mentioned in previous sections, GDP_PC1 and LE_PC1 both measure general trends for GDP and LE. Higher GDP_PC1 indicate higher overall GDP, higher LE_PC1 indicate higher overall life expectancy.
 
-Therefore **African** tend to have both the lowest overall GDP/life expectancy. **European** and **American** have the higher overall GDP/life expectancy.
+**Continents interpretation**: **African** tend to have both the lowest overall GDP/life expectancy. **European** and **American** have the higher overall GDP/life expectancy.
 
-For individual countries, **United States**, **Switzerland** and **Norway** have both high GDP_PC1 and LE_PC1, indicating best economic situation and citizen health condition. **Sierra Leone** and **Afgharistan** have low GDP_PC1 and LE_PC1, indicating worst economic situation and citizen health condition. 
+**Countries interpretation**: **United States**, **Switzerland** and **Norway** have both high GDP_PC1 and LE_PC1, indicating best economic situation and citizen health condition. **Sierra Leone** and **Afgharistan** have low GDP_PC1 and LE_PC1, indicating worst economic situation and citizen health condition. 
 
+**Extra**: The reason why the scatters are located on the left-upper side is due to the difference between scales of GDP and life expectancy. As life expectancy has a range of 0-100 while GDP can reach a value of 5e+05.
 
 # Part 3: Canonical correlation analysis
 
@@ -237,19 +303,31 @@ library(CCA)
 #print(temp %*% cca$xcoef[,1])
 ```
 
-```{r CCA,echo=FALSE,include=FALSE}
-
+```{r CCA,echo=TRUE,include=TRUE}
 cca<-cc(log(gdp),lifeExp)
-#plt.cc(cca, var.label=FALSE)
-
-# Convert cca scores to a dataframe
-scores_df <- data.frame(xscores = cca$scores$xscores[,1], 
-                        yscores = cca$scores$yscores[,1], 
-                        row.names = rownames(cca$scores$xscores))
+plt.cc(cca, var.label=TRUE,type='v')
 ```
+
+First I plot the correlation between the first two log(GDP) CC scores $\eta_1$ and $\eta_2$. The original variables are log(GDP) (red) and life Expectancy(blue).
+
+We see that $\eta_1$ is highly negatively correlated with all variables. But $\eta_2$ is less interesting here as it's uncorrelated with all other variables.
+
+```{r}
+cca<-cc(lifeExp,log(gdp))
+plt.cc(cca, var.label=TRUE,type='v')
+```
+
+Then I plot the correlation between the first two life expectancy CC scores $\psi_1$ and $\psi_2$. The original variables are log(GDP) (blue) and life Expectancy(red).
+
+We see that $\psi_1$ is highly negatively correlated with all variables. But $\psi_2$ is less interesting here as it's uncorrelated with all other variables.
 
 ```{r,echo=FALSE, fig.height=4,warning=FALSE}
 # Assuming you have a dataframe `UN` with a column `continent` that matches the rows of your CCA analysis
+cca<-cc(log(gdp),lifeExp)
+
+# Convert cca scores to a dataframe
+scores_df <- data.frame(xscores = cca$scores$xscores[,1], yscores = cca$scores$yscores[,1], row.names = rownames(cca$scores$xscores))
+
 scores_df$continent <- UN$continent
 
 ggplot(scores_df, aes(x = xscores, y = yscores, color = continent)) +
@@ -261,7 +339,7 @@ ggplot(scores_df, aes(x = xscores, y = yscores, color = continent)) +
        color = "Continent")
 ```
 
-Above is the scatter plot of the first pair of CC variables. From this plot we can conclude that there are strong correlation between the first pair of CC variables $\eta_1$(First X score) and $\phi_1$(First Y score). 
+Above is the scatter plot of the first pair of CC variables. From this plot we can conclude that there are strong correlation between the first pair of CC variables $\eta_1$(First X score) and $\psi_1$(First Y score). 
 
 ## Part 3.1: Interpretation
 
@@ -293,14 +371,11 @@ ggplot(data, aes(x = rownames(cca$ycoef), y = cca$ycoef[,1])) +
   theme(legend.title = element_blank())
 ```
 
-We see that for log(gdp), the higher the value in the red dots mean higher value in the $\eta_1$ and $\phi_1$. 
+1) $\eta_1$: The higher the $\eta_1$, the higher the values of log(gdp) in 1952, 1962, 1972-1982, 1992, 2007.
 
-1) $\eta_1$: The higher the first X scores, the higher the values of log(gdp) in 1952, 1962, 1972-1982, 1992, 2007.
-
-2) $\phi_1$: The higher the first Y score, the higher the life expectancy in 1967, 1977,1982,1992 and 2007. 
+2) $\psi_1$: The higher the $\psi_1$, the higher the life expectancy in 1967, 1977,1982,1992 and 2007. 
 
 We see that Europe countries generally has lower $\eta_1$, meaning that it yields high gdp value overall since the x coefficient has a mean of -0.06(less than 0). Europe countries also have lower $\phi_1$, meaning that it yields higher life expectancy since the y coefficient has a mean of -0.008(less than 0). The African countries yields the opposite conclusion.
-
 
 ## Part 3.2: Why log(gdp)?
 
@@ -319,24 +394,52 @@ boxplot(log(gdp), names = years, main = "log(GDP) by Year", xlab = "Year", ylab 
 
 ```
 
-The above boxplots and lineplots show that log(gdp) removes the extreme values and the spread of data doesn't increase too dramatically. This helps make reduce the distribution less skewed, which is helpful for the CCA.
+The above boxplots and lineplots show that log(gdp) removes the extreme values and the spread of data doesn't increase too dramatically. This helps make the distribution less skewed and evenly distributed, which is helpful for the CCA.
 
 ```{r, echo=FALSE,include=FALSE}
 head(cca$scores$xscores[,1]) # the canonical correlation variables 
 ```
 
+Furthermore, if we apply cca on raw GDP instead of the log(GDP), we'll obtain the following $\eta_1$ and $\psi_1$: 
+
+```{r,echo=FALSE, fig.height=4,warning=FALSE}
+# Assuming you have a dataframe `UN` with a column `continent` that matches the rows of your CCA analysis
+cca<-cc(gdp,lifeExp)
+
+# Convert cca scores to a dataframe
+scores_df <- data.frame(xscores = cca$scores$xscores[,1], yscores = cca$scores$yscores[,1], row.names = rownames(cca$scores$xscores))
+
+scores_df$continent <- UN$continent
+
+ggplot(scores_df, aes(x = xscores, y = yscores, color = continent)) +
+  geom_point() +
+  geom_text_repel(aes(label = rownames(scores_df)), size = 3) +
+  labs(x = expression( eta[1] ("First X Score")), 
+       y = expression( phi[1] ("First Y Score")), 
+       title = "Scatter Plot of Canonical Scores",
+       color = "Continent")
+```
+
+Therefore this is another reason why we need to apply log(gdp), since the raw gdp cca plot shows weak correlation between $\eta_1$ and $\psi_1$.
+
 # Part 4: Multidimensional scaling
+
+## Part 4.1: Interpretation of MDS
 
 ```{r,include=FALSE}
 library(dplyr)
 library(ggpubr) # repels figure labels
 ```
 
-
-```{r,echo=FALSE,warning=FALSE}
+```{r,echo=TRUE}
 UN.transformed <- cbind(log(UN[,3:14]), UN[,15:26], log(UN[,27:38]))
 UN.transformed <- dist(UN.transformed)
 UN.transformed <- cmdscale(UN.transformed)
+```
+
+For this part I calculated the distance matrix of the dataset, and then performed multidimensional scaling for the distance matrix.
+
+```{r,echo=FALSE,warning=FALSE}
 UN.transformed <- data.frame(UN.transformed, 
                         row.names = rownames(cca$scores$xscores))
 colnames(UN.transformed) <- c("x", "y")
@@ -349,26 +452,37 @@ ggplot(UN.transformed, aes(x = x, y = y, color = continent)) +
     labs(color = "Continent")  # Labeling the color legend as "Continent"
 ```
 
-It can be seen that data points are clustered based on continents, African countries are mostly located at the left bottom while the European countries are located at the right center.
+MDS can identify patterns, trends, and potential anomalies among the data provided. The plot above contains the lower dimensional representation of the original data which contains the distance information.
 
-This shows that countries from the same continent tends to share similar properties as they clustered together.
+In this plot, shorter distance indicates higher similarity between data points(countries), on the contrary longer distance indicate minor similarity.
 
+As a result, data points are clustered based on continents, African countries are mostly located at the left bottom while the European countries are located at the right center. This shows that countries from the same continent tends to share similar properties as they clustered together. (This also means the MDS successfully captures the trend between different countries)
+
+## Part 4.2: Comparison between MDS and PCA/CCA
+
+All three methods are dimensionality reduction methods with different aims. PCA focus on describing the principle components that maximize transformed data's variance,  CCA focus on describing the canonical components that maximize transformed data's correlation, and MDS creates a set of $R^2$ dataset that contains the information of the distance matrix.
+
+From the colored figures for all three methods, we see that they all successfully captured the trend inside the data, clustering the data from Africa and Europe, while countries in Asia/America/Oceania spread evenly among the figure.
 
 # Part 5: Linear Discriminant Analysis
 
+## Part 5.1: Train-Test split
+
 Since we are predicting the continent of each country, let's first visualize out sample data.
 
-```{r splittingdata,echo=FALSE,include=FALSE}
+```{r,echo=FALSE,include=FALSE}
 library(caret)
 # If 'continent' is not a factor, convert it to factor
-temp <- UN
-temp$continent <- as.factor(temp$continent)
+#temp <- UN
+#temp$continent <- as.factor(temp$continent)
 
+```
+
+```{r splittingdata,echo=TRUE}
 set.seed(123)  # for reproducibility
 # Creating indices for a stratified sample
 test.index <- createDataPartition(UN$continent, p = 0.1, list = FALSE)
-#set.seed(123) # so that I get the same results each time.
-#test.index <- sample(1:141, size=20)
+
 UN.test <- UN[test.index,]
 UN.train <- UN[-test.index,]
 ```
@@ -382,7 +496,6 @@ ggplot(UN, aes(x = continent)) +  # Specify where the data comes from and which 
        y = "Count") +  # Adding labels
   theme_minimal()  # Using a minimalistic theme
 
-
 # Plotting the data
 ggplot(UN.train, aes(x = continent)) +  # Specify where the data comes from and which variable to plot
   geom_bar(fill = "skyblue") +  # This automatically counts the number of each unique value in the continent column
@@ -393,11 +506,12 @@ ggplot(UN.train, aes(x = continent)) +  # Specify where the data comes from and 
 
 print(paste("The number of occurrences of Oceania in UN is", table(UN$continent)["Oceania"]))
 
-
 print(paste("The number of occurrences of Oceania in UN.train is", table(UN.train$continent)["Oceania"]))
 ```
 
 This plot shows that we have only 2 observation of Oceania. Therefore I implement stratified sampling technique from the caret package to ensure that the train-test split is well partitioned and guarantees at least one observation of Oceania is included into the training set
+
+## Part 5.2: LDA fitting (Without PCA)
 
 Now we fit the lda predictor and the result is given as follows:
 
@@ -408,11 +522,16 @@ print(paste("The predictive accuracy is ",
 sum(UN.pred$class== UN.test$continent)/dim(UN.test)[1]*100, "%"))
 ```
 
-```{r,echo=FALSE}
+```{r}
 table(UN.pred$class, UN.test$continent)
 ```
 
-The above table shows that 1 Oceania country has been mis-classified as Europe, 6 Asia countries has been mis-classified as Africa/America and 1 American country is mis-classified as Asia.
+
+In this table, the rows are the number of predicted continents, where the columns indicates the number of actual continents.
+
+Therefore 1 Oceania country has been mis-classified as Europe, 1 Europe country is mis-classified as Oceania, 2 Asia country is misclassified as Africa/America and 2 American country are mis-classified as Asia.
+
+## Part 5.3: LDA fitting (With PCA)
 
 64% prediction accuracy is unacceptable for a predictive model. Therefore I decide to perform PCA on the dataset before performing LDA. 
 
@@ -423,12 +542,12 @@ all <- data.frame(gdp, lifeExp, popn)
 # Perform Principal Component Analysis on the combined dataset
 all.pca <- prcomp(all, scale = TRUE)
 
-fviz_eig(all.pca, addlabels = TRUE, ylim = c(0, 100)) + ggtitle("Scree plot for LE.PCA")+ theme(plot.title = element_text(hjust = 0.5))
+fviz_eig(all.pca, addlabels = TRUE, ylim = c(0, 100)) + ggtitle("Scree plot for Combined dataset")+ theme(plot.title = element_text(hjust = 0.5))
 
 fviz(all.pca, element='var') #Interpretation of leading PC
 ```
 
-Based on the scree plot above, I decided to train the LDA predictor based on the first 3 principle components. Using the same train_test split obtained earlier, the PCA based lda predictor shows an increased accuracy of 76%, which is improved compared with the previous non-PCA measure.
+Based on the scree plot above, I decided to train the LDA predictor based on the first 6 principle components to include more information. Using the same train_test split obtained earlier, the PCA based lda predictor shows an increased accuracy of 76%, which is improved compared with the previous non-PCA measure.
 
 ```{r,echo=FALSE}
 all.test <- data.frame(all.pca$x[test.index,1:6])
@@ -444,49 +563,69 @@ all.lda<-lda(continent ~ PC1+PC2+PC3+PC4+PC5+PC6, all.train)
 all.pred <- predict(all.lda,all.test)
 print(paste("The predictive accuracy is ", 
 sum(all.pred$class== all.test$continent)/dim(all.test)[1]*100, "%"))
-
 ```
 
-```{r,echo=FALSE}
+```{r}
 table(all.pred$class, all.test$continent)
 ```
 
-# Part 6:Clustering
+
+
+In this table, the rows are the number of predicted continents, where the columns indicates the number of actual continents.
+
+Therefore 1 Oceania country has been mis-classified as Europe, 1 Asia country is misclassified as America, 1 American country is mis-classified as Asia and 1 Africa country is mis-classified as Asis.
+
+# Part 6: Clustering
 
 ```{r scaling, echo=FALSE}
 UN.scaled <- UN[,1:26]
 UN.scaled[,3:26] <- scale(UN[,3:26])
 ```
 
-Since we have five different continents, therefore we cut off the tree at depth=5 and check which clustering technique can distinguish the continents the best.
+In the following section, I'm going to perform three different clustering techniques, and they are K-means clustering, Model-based clustering and Hierarchical clustering.
 
-1) K-means clustering
-```{r,echo=FALSE}
+```{r,echo=FALSE,include=FALSE}
 library(factoextra)
+library(gridExtra)
+library(grid)
+```
+
+## Part 6.1: K-means clustering
+
+Based on the elbow method, it seems to have 3-5 natural clusters in the data, because the Wss decrease rapidly from 2 to 5, and later parts only yields minor decreases.
+
+```{r,echo=FALSE,fig.height=3,fig.width=3.5}
 fviz_nbclust(UN.scaled[,3:26], kmeans, method = "wss")
 ```
 
-Based on the elbow method, it seems to have three natural clusters in the data, because the Wss decrease rapidly from 2 to 3, and later parts only yields minor improvements.
-
-```{r,echo=FALSE}
-set.seed(123)
-UN.k <- kmeans(UN.scaled[,3:26], centers = 3, nstart=25)
-```
-
-```{r,echo=FALSE}
-table(UN.k$cluster, UN$continent)
-```
-
-```{r,echo=FALSE}
+```{r}
+library(factoextra)
 set.seed(123)
 UN.k <- kmeans(UN.scaled[,3:26], centers = 5, nstart=25)
+
 ```
 
 ```{r,echo=FALSE}
-table(UN.k$cluster, UN$continent)
+t1 <- table(UN.k$cluster, UN$continent)
 ```
 
-2) Model-based clustering : Gaussian clusters
+Therefore I perform K-means cluster with center number K=5, and the clustering result is included below. It seems that African countries has similar data pattern and was clustered mostly in cluster 2. Furthermore, Americas and Asia are mostly clustered into cluster 1,2.
+
+```{r, echo=FALSE}
+grid.arrange(
+  tableGrob(t1, theme = ttheme_default(base_size = 10)),
+  ncol = 1
+)
+
+```
+
+```{r,echo=FALSE}
+fviz_cluster(UN.k, UN.scaled[,3:26], ellipse.type = "norm")
+```
+
+From the above PC component plot, it can be seen that the data has been clustered into 5 different natural sets with minor coincide between clusters.
+
+## Part 6.2: Model-based clustering : Gaussian clusters
 
 Since how to choose K for model-based clustering is beyond the scope of this module, I randomly choose G = 5 ^_^ (Because we got five different continents and hopefully it can cluster the sets into different continents)
 
@@ -496,76 +635,114 @@ UN.m <- Mclust(UN.scaled[,3:26],G=5)
 #plot(UN.m, what = c("classification"))
 ```
 
-```{r}
-table(UN.m$classification, UN$continent)
+```{r,echo=FALSE}
+t1 <- table(UN.m$classification, UN$continent)
 ```
 
-Once again it successfully clustered out a group which is Africa.
+```{r, echo=FALSE}
+grid.arrange(
+  tableGrob(t1, theme = ttheme_default(base_size = 10)),
+  ncol = 1
+)
+```
 
-1) Hierarchical clustering with single linkage
+The result is similar to the previous part, cluster 2 seems to contain most of the Africa countries and cluster 1 seems to contain most of the Americas and Asia countries. Cluster 4/5 contains most of the Europe countries.
 
+```{r,echo=FALSE}
+fviz_cluster(UN.m, UN.scaled[,3:26], ellipse.type = "norm")
+```
+
+From the above PC component plot, it can be seen that the model-based Gaussian clustering doesn't provide a good cluster, as there are plenty of overlaps between different clusters(especially cluster 3).
+
+## Part 6.3: Hierarchical clustering 
+For Hierarchical clustering, since we only have five different continents, therefore we choose to cut off the tree at depth=5 and check which clustering technique can distinguish the continents the best.
 
 ```{r,echo=FALSE,fig.width=3, fig.height=3}
 UN.single <- hclust(dist(UN.scaled[,3:26],method="euclidean"),method="single")
-#plot(UN.single, labels=UN$continent,cex=0.2)
 Group_num <- cutree(UN.single, k=5)
-table(Group_num, UN$continent)
+t1 <- table(Group_num, UN$continent)
 ```
-
-2) Hierarchical clustering with complete linkage
 
 ```{r,echo=FALSE,fig.width=3, fig.height=3}
-UN.complete <- hclust(dist(UN.scaled[,3:26],method="euclidean"),method="complete")
-#plot(UN.complete, labels=UN$continent,cex=0.2)
+UN.complete <- hclust(dist(UN.scaled[,3:26],method="euclidean"),
+                      method="complete")
 Group_num <- cutree(UN.complete, k=5)
-table(Group_num, UN$continent)
+t2 <- table(Group_num, UN$continent)
 ```
-
-3) Hierarchical clustering with Ward's method
 
 ```{r,echo=FALSE,fig.width=3, fig.height=3}
 UN.ward <- hclust(dist(UN.scaled[,3:26],method="euclidean"),method="ward.D2")
 #plot(UN.ward, labels=UN$continent,cex=0.2)
 Group_num <- cutree(UN.ward, k=5)
-table(Group_num, UN$continent)
+t3 <- table(Group_num, UN$continent)
 ```
-
-4) Hierarchical clustering with average linkage
 
 ```{r,echo=FALSE,fig.width=3, fig.height=3}
-UN.average <- hclust(dist(UN.scaled[,3:26],method="euclidean"),method="average")
+UN.average <- hclust(dist(UN.scaled[,3:26],method="euclidean"),
+                     method="average")
 #plot(UN.average, labels=UN$continent,cex=0.2)
 Group_num <- cutree(UN.average, k=5)
-table(Group_num, UN$continent)
+t4 <- table(Group_num, UN$continent)
 ```
 
-```{r, fig.width=9, fig.height=7, fig.align="center",warning=FALSE, echo=FALSE}
+```{r, echo=FALSE}
+g1 <- tableGrob(t1, theme = ttheme_default(base_size = 8))
+g2 <- tableGrob(t2, theme = ttheme_default(base_size = 8))
+g3 <- tableGrob(t3, theme = ttheme_default(base_size = 8))
+g4 <- tableGrob(t4, theme = ttheme_default(base_size = 8))
+
+tit1 <- textGrob("Single Linkage", gp=gpar(fontsize=12))
+tit2 <- textGrob("Complete Linkage", gp=gpar(fontsize=12))
+tit3 <- textGrob("Ward's Linkage", gp=gpar(fontsize=12))
+tit4 <- textGrob("Average Method", gp=gpar(fontsize=12))
+
+fG1 <- arrangeGrob(tit1, g1, ncol=1, heights=c(1, 12))
+fG2 <- arrangeGrob(tit2, g2, ncol=1, heights=c(1, 12))
+fG3 <- arrangeGrob(tit3, g3, ncol=1, heights=c(1, 12))
+fG4 <- arrangeGrob(tit4, g4, ncol=1, heights=c(1, 12))
+
+grid.arrange(fG1, fG2,fG3,fG4,ncol=2)
+```
+
+From the above tables, it can be checked that the Hierarchical clustering with Ward's method is the best, as group_2 is dominanted with **Africa** countries, while group_5 is dominated by **Europe** countries.
+
+This means that **Africa** and **Europe** contries tend to be closer to each other under the **Ward's** method.
+
+```{r, fig.width=9, fig.height=7, fig.align="center",warning=FALSE, echo=FALSE,include=TRUE}
 par(mfrow=c(2,2))
-plot(UN.single, labels = UN$continent, cex=0.5)
-plot(UN.average, labels = UN$continent, cex=0.5)
-plot(UN.complete, labels = UN$continent, cex=0.5)
-plot(UN.ward, labels = UN$continent, cex=0.5)
+plot(UN.single, labels = UN$country, cex=0.2, main = "Single linkage")
+plot(UN.average, labels = UN$country, cex=0.2, main = "Average linkage")
+plot(UN.complete, labels = UN$country, cex=0.2, main = "Complete linkage")
+plot(UN.ward, labels = UN$country, cex=0.2, main = "Ward's method")
 ```
 
-From the above tables, it can be checked that the Hierarchical clustering with Ward's method is the best, as group_2 is dominanted with Africa countries, while group_5 is dominated by Europe countries.
+From the above Dendrograms, it can be observed that African countries are successfully clustered together in each method, this reflects that African countries data shares a lot in common. 
 
-This means that Africa and Europe contries tend to be closer to each other under the Ward's method.
+Furthermore, **Saudi Arabia** can be observed at upper part in many dendrograms, this means it doesn't join into cluster until later stage of clustering. This observation reflects **Saudi Arabia** has special data property when compared with other countries. 
+
+## Part 6.4: Clustering Conclusion
+
+Different methods find different clusters, and we naturally interpret the clusters as continents.
+
+Therefore, we evaluate the performance of clustering based on whether it successfully split the data into clusters that represent continents. By visually examining the clustering results, the Hierarchichal clustering with **Ward's Method** proves to be the best method as it successfully obtained groups that are dominated by Africa, Asia, Europe and America.
 
 # Part 7: Linear regression
 
-Before fitting any models, I first split the data into training dataset and testing dataset using stratified sampling technique, one of the training set is GDP and another training set is log(GDP). In later part I'll fit the OLS, PCR and Ridge regression on raw GDP and log(GDP), then compare their testing accuracy on the testing dataset to determine which model is the best.
+## Part 7.0: Train Test split
+
+```{r,echo=TRUE}
+set.seed(123)  # for reproducibility
+# Creating indices for a stratified sample
+test.index <- createDataPartition(UN$continent, p = 0.1, list = FALSE)
+UN.test <- UN[test.index,]
+UN.train <- UN[-test.index,]
+```
+
+Before fitting any models, I first split the data into training dataset and testing dataset using stratified sampling technique, one of the training set is GDP and another training set is log(GDP). In later part I'll fit the **OLS**, **PCR** and **Ridge regression** on raw GDP and log(GDP), then compare their testing accuracy on the testing dataset to determine which model is the best.
 
 ## Part 7.1: OLS(Ordinary Least square)
 
 ```{r,echo=FALSE,include=FALSE}
-
-set.seed(123)  # for reproducibility
-# Creating indices for a stratified sample
-test.index <- createDataPartition(UN$continent, p = 0.1, list = FALSE)
-#set.seed(123) # so that I get the same results each time.
-#test.index <- sample(1:141, size=20)
-UN.test <- UN[test.index,]
-UN.train <- UN[-test.index,]
 
 x <- UN.train[,3:14]
 logx <- log(UN.train[,3:14])
@@ -587,7 +764,13 @@ library(pls)
 ```{r,echo=FALSE}
 ols <- lm(y~., data=data_train)
 ols.log <- lm(y~., data=data_train_log)
+ols
+ols.log
+```
 
+The above are the two OLS models I fitted for GDP and log(GDP), and their coefficients are listed above.
+
+```{r,echo=FALSE}
 # Make predictions
 predictions_ols <- predict(ols, newdata = data_test)
 predictions_ols_log <- predict(ols.log, newdata = data_test_log)
@@ -602,22 +785,22 @@ print(paste("The RMSEP for ols prediction on test set is", round(mse_ols, 2)))
 print(paste("The RMSEP for ols_log prediction on test set is", round(mse_ols_log, 2)))
 ```
 
-First I fit the OLS regression model on both gdp and log(gdp) model. The RMSEP(root of mean square error for prediction) are listed above.
+First I fit the OLS regression model on both gdp and log(gdp) model. The RMSEP(root of mean square error for prediction) are listed above. I'll compare the accuracy between all models after all model accuracies are calculated, and I'll apply the same train_test split for each model trainings.
 
 ## Part 7.2: PCR (principle component regression)
 
 ```{r,echo=FALSE,fig.width=3, fig.height=3}
 
-pcr <- pcr(y~., data=data_train, validation = 'CV')
-#summary(pcr)
-plot(RMSEP(pcr), legendpos = "topright")
+pcr <- pcr(y~., data=data_train, validation = 'CV',scale=FALSE)
+summary(pcr)
+plot(RMSEP(pcr), legendpos = "topright",main='GDP')
 
-pcr_log <- pcr(y~., data=data_train_log, validation = 'CV')
-plot(RMSEP(pcr_log), legendpos = "topright")
+pcr_log <- pcr(y~., data=data_train_log, validation = 'CV',scale=FALSE)
+plot(RMSEP(pcr_log), legendpos = "topright",main='log(GDP)')
 
 ```
 
-From the above figure, it looks like for GDP 1 component is sufficient, as using more than 1 component doesn't lead to big decreases in the cross-validation error and even lead to larger prediction errors. But for log(GDP) 2 components are needed, since the lowest RMSEP is achieved at components = 2.
+From the above figure, it looks like for GDP 1 component is sufficient, as using more than 1 component doesn't lead to big decreases in the cross-validation error and even lead to larger prediction errors. But for log(GDP), 2 components are needed, since the lowest RMSEP is achieved at components = 2.
 
 ```{r,echo=FALSE}
 
@@ -645,7 +828,7 @@ library(glmnet)
 
 ```{r,echo=FALSE,fig.width=3, fig.height=3}
 ridge <- glmnet(x,y,alpha = 0)
-plot(ridge,xvar='lambda')
+#plot(ridge,xvar='lambda')
 ```
 
 ```{r,echo=FALSE,fig.width=3, fig.height=3}
@@ -694,20 +877,10 @@ comparison_table <- data.frame(
 print(comparison_table)
 ```
 
-Therefore, by comparing the RMSEP calculated on the test dataset, it's obvious that using log(gdp) as predictors produces better prediction result, and the OLS regression produce the lowest RMSEP, which is the best model in this case.
+Above table summarizes the final RMSEP(Root of Mean Square Error for Prediction) based on different prediction model and whether using log(gdp) (second column) or raw gdp(first column).
 
-# Trash content
+Therefore we reach the following conclusions:
 
-```{r,echo=FALSE,include=FALSE}
-x.pca <- prcomp(x)
-PCscores <- x.pca$x
-le.pcr <- lm(y~PCscores,data = data.frame(cbind(y,PCscores)))
-coef(le.pcr)
-le.pcr.coef <- x.pca$rotation %*% coef(le.pcr)[-1]
-head(le.pcr.coef)
-```
+1) For dataset, using **log(gdp)** as predictors produces better prediction result than using **raw gdp**. 
 
-# Appendix
-
-```{r ref.label=knitr::all_labels(), echo = T, eval = F}
-```
+2) For model, the **OLS** regression produce the lowest RMSEP, which is better than PCR and Ridge regression.
